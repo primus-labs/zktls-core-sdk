@@ -76,6 +76,7 @@ exports.getAttestationConfig = () => {
     basePort: "443",
     getdatatime: "1735028372985", // todo:auto generate
     credVersion: "1.0.5",
+    modelType: "proxytls", // one of [mpctls, proxytls]
     user: {
       userid: "1111111111111111111",
       address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
