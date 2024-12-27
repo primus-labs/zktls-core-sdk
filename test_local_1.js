@@ -57,12 +57,9 @@ async function test_local_1() {
   // step z: call getAttestation
   await getAttestation(attParams);
 
-  // get the result, todo: Promise
-  for (let i = 0; i < 3; i++) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log(i);
-    getAttestationResult();
-  }
+  // get the result
+  const result = await getAttestationResult(60 * 1000);
+  console.log("result", result);
 
   process.exit(0); // exit
 }

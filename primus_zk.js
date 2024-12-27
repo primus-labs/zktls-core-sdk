@@ -38,14 +38,34 @@ exports.getAttestation = async (paramsObj) => {
   return result;
 };
 
-// todo: Promise
-exports.getAttestationResult = async () => {
+
+exports.getAttestationResult = async (timeout = 2 * 60 * 1000) => {
   const params = `{"method":"getAttestationResult","version":"1.1.1","params":{"requestid":"1"}}`;
   console.log('enter getAttestationResult. params:', params);
-  const result = await callAlgorithm(params);
-  console.log('leave getAttestationResult. result:', result);
-  return result;
-};
+
+  return new Promise((resolve, reject) => {
+    const start = performance.now();
+    const tick = async () => {
+      const timeGap = performance.now() - start;
+      let resObj = null;
+      try {
+        const res = await callAlgorithm(params);
+        resObj = JSON.parse(res);
+      } catch (err) {
+      }
+      // console.log("resObj", resObj);
+
+      if (resObj && (resObj.retcode == "0" || resObj.retcode == "2")) {
+        resolve(resObj);
+      } else if (timeGap > timeout) {
+        reject('timeout');
+      } else {
+        setTimeout(tick, 1000);
+      }
+    };
+    tick();
+  });
+}
 
 exports.getAttestationConfig = () => {
   const attestationParams = {
