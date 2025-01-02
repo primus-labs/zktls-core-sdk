@@ -3,7 +3,7 @@ global.WebSocket = require('ws');
 
 // load wasm module
 Module_callAlgorithm = null;
-const Module = require("./client_plugin.js");
+const Module =  require('./client_plugin');
 Module.onRuntimeInitialized = async () => {
   console.log("Module Initialized OK.");
   Module_callAlgorithm = Module.cwrap('callAlgorithm', 'string', ['string']);
@@ -17,8 +17,7 @@ const callAlgorithm = async (params) => {
   return Module_callAlgorithm(params);
 };
 
-
-const init = async () => {
+exports.init = async () => {
   const params = `{"method":"init","version":"1.1.1","params":{}}`;
   console.log('enter init. params:', params);
   const result = await callAlgorithm(params);
