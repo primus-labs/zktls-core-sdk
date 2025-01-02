@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/primus_zk.js","./src/algorithm/client_plugin.js","./src/algorithm/client_plugin.worker.js","./src/config/constants.ts"],"version":"5.7.2"}
+{"root":["./src/assembly_params.ts","./src/index.ts","./src/primus_zk.js","./src/utils.ts","./src/algorithm/client_plugin.js","./src/algorithm/client_plugin.worker.js","./src/classes/attrequest.ts","./src/config/constants.ts"],"errors":true,"version":"5.7.2"}
