@@ -65,10 +65,10 @@ function assemblyResponse(responseResolves: AttNetworkResponseResolve[]) {
     })
     const formatResponse = {
         conditions: {
+            type:"CONDITION_EXPANSION",
+            op: "&",
             subconditions
-        },
-        op: "&",
-        type:"CONDITION_EXPANSION"
+        }
     }
     return [formatResponse];
 }
