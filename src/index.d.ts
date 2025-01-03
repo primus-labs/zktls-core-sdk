@@ -2,7 +2,7 @@ export type AttNetworkRequest = {
     url: string,
     header: object,
     method: string,
-    body: string
+    body: string // TODO
 }
 
 export type AttNetworkResponseResolve = {
@@ -37,8 +37,8 @@ export type AttMode = {
 
 export type BaseAttestationParams = {
     appId: string;
-    request: AttNetworkRequest,
-    reponseResolve: AttNetworkResponseResolve[]
+    request: AttNetworkRequest;
+    responseResolves: AttNetworkResponseResolve[];
     userAddress: string;
 }
 

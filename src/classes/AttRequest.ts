@@ -13,7 +13,7 @@ export class AttRequest {
   additionParams?: string;
 
   constructor(baseAttestationParams: BaseAttestationParams) {
-    const { appId, userAddress } = baseAttestationParams
+    const { appId, userAddress, request, responseResolves } = baseAttestationParams
     this.appId = appId
     this.userAddress = userAddress
     this.timestamp = + new Date()
@@ -21,6 +21,8 @@ export class AttRequest {
       algorithmType: 'proxytls',
       resultType: 'plain'
     } // TODO
+    this.request = request
+    this.responseResolves = responseResolves
   }
   setAdditionParams(additionParams: string) {
     this.additionParams = additionParams

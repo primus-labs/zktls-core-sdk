@@ -1,12 +1,13 @@
 import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest } from './index.d'
 
 export function assemblyParams(att: SignedAttRequest) {
-    let padoUrl, proxyUrl, modelType="proxytls";
-    padoUrl = "wss://api-dev.padolabs.org/algorithm-proxyV2";
-    proxyUrl = "wss://api-dev.padolabs.org/algoproxyV2";
-    let host = att.attRequest.request.url;
-    if (att.attRequest.attMode?.algorithmType === "mpctls") {
-        padoUrl = "wss://api-dev.padolabs.org/algorithmV2";
+    let padoUrl, proxyUrl, modelType = "proxytls";
+    padoUrl = process.env.PRIMUS_PROXY_URL;
+    proxyUrl = process.env.PROXY_URL;
+    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams}, appSignature } = att
+    let host = new URL(request.url).host;
+    if (attMode?.algorithmType === "mpctls") {
+        padoUrl = process.env.PRIMUS_MPC_URL;
         modelType = "mpctls"
     }
     let timestamp = (+ new Date()).toString();
@@ -20,31 +21,54 @@ export function assemblyParams(att: SignedAttRequest) {
         modelType: modelType, // one of [mpctls, proxytls]
         user: {
             userid: "",
-            address: att.attRequest.userAddress,
+            address: userAddress,
             token: "",
         },
         authUseridHash: "",
         appParameters: {
-            appId: att.attRequest.appId,
-            appSignParameters: att.attRequest.toJsonString(),
-            appSignature: att.appSignature,
-            additionParams: att.attRequest.additionParams
+            appId: appId,
+            appSignParameters: JSON.stringify(att.attRequest),
+            appSignature: appSignature,
+            additionParams
         },
         reqType: "web",
-        host: host, // should set
-        requests: assemblyRequest(att.attRequest.request),
-        responses: assemblyResponse(att.attRequest.reponseResolve), // should set
-        templateId: "",
+        host,
+        requests: assemblyRequest(request),
+        responses: assemblyResponse(responseResolves),
+        templateId: "5555555555555555555",
         PADOSERVERURL: "https://api-dev.padolabs.org",
         padoExtensionVersion: "0.3.21"
     };
     return attestationParams;
 }
 
-function assemblyRequest(_: AttNetworkRequest) {
-    return [];
+function assemblyRequest(request: AttNetworkRequest) {
+    let { url, header, method, body } = request;
+    const formatRequest = {
+            url,
+            method,
+            headers: {...header,'Accept-Encoding': 'identity'},
+            body,
+        }
+    return [formatRequest]
 }
 
-function assemblyResponse(_: AttNetworkResponseResolve[]) {
-    return [];
+function assemblyResponse(responseResolves: AttNetworkResponseResolve[]) {
+    const subconditions = responseResolves.map(rR => {
+        const {keyName, parsePath} = rR
+        return {
+            field: parsePath,
+            reveal_id: keyName,
+            op: "REVEAL_STRING",
+            type: "FIELD_REVEAL"
+        }
+    })
+    const formatResponse = {
+        conditions: {
+            subconditions
+        },
+        op: "&",
+        type:"CONDITION_EXPANSION"
+    }
+    return [formatResponse];
 }

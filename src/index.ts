@@ -5,7 +5,7 @@ import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, Attesta
 import { AttRequest } from './classes/AttRequest'
 import { encodeAttestation } from "./utils";
 import { init, getAttestation, getAttestationResult } from "./primus_zk";
-import { assemblyParams } from 'assembly_params';
+import { assemblyParams } from './assembly_params';
 
 class PrimusCoreTLS {
   appId: string;
@@ -16,20 +16,20 @@ class PrimusCoreTLS {
     this.appSecret= '';
   }
 
-  init(appId: string, appSecret: string): Promise<string | boolean> {
+  async init(appId: string, appSecret: string): Promise<string | boolean> {
     this.appId = appId
     this.appSecret = appSecret
-    return init();
+    return await init();
   }
 
   generateRequestParams(request: AttNetworkRequest, 
-    reponseResolve: AttNetworkResponseResolve[], 
+    responseResolves: AttNetworkResponseResolve[], 
     userAddress?: string): AttRequest {
     const userAddr = userAddress? userAddress: "0x7ab44DE0156925fe0c24482a2cDe48C465e47573";
     return new AttRequest({
       appId: this.appId,
       request,
-      reponseResolve,
+      responseResolves,
       userAddress: userAddr
     })
   }
@@ -51,11 +51,18 @@ class PrimusCoreTLS {
 
   async startAttestation(attRequest: AttRequest): Promise<Attestation> {
     try {
-      const signedAttRequest = await this.sign(attRequest.toJsonString());
+      const signParams = attRequest.toJsonString()
+      console.log("-------------sign signParams=", signParams);
+      const signedAttRequest = await this.sign(signParams);
+      console.log("-------------sign result=", signedAttRequest);
       const attParams = assemblyParams(signedAttRequest);
-      const attStartRes = await getAttestation(attParams);
+      console.log("-------------assemblyParams result=", attParams);
+      const getAttestationRes = await getAttestation(attParams);
+      console.log("-------------getAttestation result=", getAttestationRes);
       const res = await getAttestationResult();
+      // TODO output: JSON.parse(res.content.encodedData)
       console.log("startAttestation res=", res);
+      return Promise.resolve(res.content.encodedData)
     } catch (e: any) {
       return Promise.reject(e)
     }
