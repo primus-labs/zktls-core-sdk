@@ -4,7 +4,7 @@ export function assemblyParams(att: SignedAttRequest) {
     let padoUrl, proxyUrl, modelType="proxytls";
     padoUrl = "wss://api-dev.padolabs.org/algorithm-proxyV2";
     proxyUrl = "wss://api-dev.padolabs.org/algoproxyV2";
-    //let host = ;
+    let host = att.attRequest.request.url;
     if (att.attRequest.attMode?.algorithmType === "mpctls") {
         padoUrl = "wss://api-dev.padolabs.org/algorithmV2";
         modelType = "mpctls"
@@ -19,22 +19,22 @@ export function assemblyParams(att: SignedAttRequest) {
         credVersion: "1.0.5",
         modelType: modelType, // one of [mpctls, proxytls]
         user: {
-            userid: "1111111111111111111",
+            userid: "0",
             address: att.attRequest.userAddress,
-            token: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            token: "0",
         },
-        authUseridHash: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        authUseridHash: "",
         appParameters: {
-            appId: "0x3333333333333333333333333333333333333333",
-            appSignParameters: "{}",
-            appSignature: "0xcccccccccccccccccccccccccccccccccccccccc",
-            additionParams: ""
+            appId: att.attRequest.appId,
+            appSignParameters: att.attRequest.toJsonString(),
+            appSignature: att.appSignature,
+            additionParams: att.attRequest.additionParams
         },
         reqType: "web",
-        host: "localhost.com", // should set
+        host: host, // should set
         requests: assemblyRequest(att.attRequest.request),
         responses: assemblyResponse(att.attRequest.reponseResolve), // should set
-        templateId: "5555555555555555555",
+        templateId: "",
         PADOSERVERURL: "https://api-dev.padolabs.org",
         padoExtensionVersion: "0.3.21"
     };

@@ -25,7 +25,7 @@ class PrimusCoreTLS {
   generateRequestParams(request: AttNetworkRequest, 
     reponseResolve: AttNetworkResponseResolve[], 
     userAddress?: string): AttRequest {
-    const userAddr = userAddress? userAddress: "";
+    const userAddr = userAddress? userAddress: "0x7ab44DE0156925fe0c24482a2cDe48C465e47573";
     return new AttRequest({
       appId: this.appId,
       request,
