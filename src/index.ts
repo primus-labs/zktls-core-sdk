@@ -3,24 +3,27 @@ import { PADOADDRESS } from "./config/constants";
 import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, Attestation } from './index.d'
 // import { ZkAttestationError } from './error'
 import { AttRequest } from './classes/AttRequest'
+import { AlgorithmUrls } from "./classes/AlgorithmUrls";
 import { encodeAttestation } from "./utils";
-import { getAttestation, getAttestationResult } from "./primus_zk";
+import { init, getAttestation, getAttestationResult } from "./primus_zk";
 import { assemblyParams } from './assembly_params';
 
 class PrimusCoreTLS {
   appId: string;
   appSecret?: string;
+  algoUrls: AlgorithmUrls
 
   constructor() {
     this.appId = '';
-    this.appSecret= '';
+    this.appSecret = '';
+    this.algoUrls = new AlgorithmUrls()
+    console.log('-----------algoUrls1',this.algoUrls.toJsonString())
   }
 
   async init(appId: string, appSecret: string): Promise<string | boolean> {
     this.appId = appId
     this.appSecret = appSecret
-    // await init()
-    return '';
+    return await init();
   }
 
   generateRequestParams(request: AttNetworkRequest, 
@@ -56,12 +59,11 @@ class PrimusCoreTLS {
       // console.log("-------------sign signParams=", signParams);
       const signedAttRequest = await this.sign(signParams);
       // console.log("-------------sign result=", signedAttRequest);
-      const attParams = assemblyParams(signedAttRequest);
+      const attParams = assemblyParams(signedAttRequest, this.algoUrls);
       console.log("-------------assemblyParams result=", attParams);
       const getAttestationRes = await getAttestation(attParams);
       console.log("-------------getAttestation result=", getAttestationRes);
       const res:any = await getAttestationResult();
-      // TODO output: JSON.parse(res.content.encodedData)
       console.log("startAttestation res=", res);
       return Promise.resolve(res?.content?.encodedData)
     } catch (e: any) {

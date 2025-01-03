@@ -1,24 +1,21 @@
 import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest } from './index.d'
-
-export function assemblyParams(att: SignedAttRequest) {
-    let padoUrl, proxyUrl, modelType = "proxytls";
-    const ENV = process.env;
-    const NODE_ENV = ENV.NODE_ENV;
-    console.log('--------------process.env.NODE_ENV', NODE_ENV)
-    padoUrl =  'wss://api-dev.padolabs.org/algorithm-proxyV2';
-    proxyUrl = 'wss://api-dev.padolabs.org/algoproxyV2';
+import { AlgorithmUrls } from './classes/AlgorithmUrls';
+export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUrls) {
+    const { primusMpcUrl, primusProxyUrl, proxyUrl } = algorithmUrls
+    let padoUrl = primusProxyUrl;
+    let modelType = "proxytls";
     const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams}, appSignature } = att
     let host = new URL(request.url).host;
     if (attMode?.algorithmType === "mpctls") {
-        padoUrl = "wss://api-dev.padolabs.org/algorithmV2";
+        padoUrl = primusMpcUrl;
         modelType = "mpctls"
     }
     let timestamp = (+ new Date()).toString();
     const attestationParams = {
         source: "source", // not empty
         requestid: "d9415490-3bc3-49ac-93ca-97165aa2a4a1", // todo:auto generate
-        padoUrl: padoUrl, // should set
-        proxyUrl: proxyUrl, // should set
+        padoUrl, // should set
+        proxyUrl, // should set
         getdatatime: timestamp, // todo:auto generate
         credVersion: "1.0.5",
         modelType: modelType, // one of [mpctls, proxytls]
@@ -75,3 +72,4 @@ function assemblyResponse(responseResolves: AttNetworkResponseResolve[]) {
     }
     return [formatResponse];
 }
+

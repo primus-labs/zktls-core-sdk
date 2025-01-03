@@ -19,7 +19,7 @@
     "format": "prettier --check --write src/**/*.ts  --config .prettierrc",
     "pretest:integration": "npm run build && npm link",
     "publish": "npm publish --access public",
-    "test": "cross-env NODE_ENV=test && jest --forceExit"
+    "test": "jest --forceExit"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
