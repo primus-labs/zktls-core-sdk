@@ -19,9 +19,9 @@ export function assemblyParams(att: SignedAttRequest) {
         credVersion: "1.0.5",
         modelType: modelType, // one of [mpctls, proxytls]
         user: {
-            userid: "0",
+            userid: "",
             address: att.attRequest.userAddress,
-            token: "0",
+            token: "",
         },
         authUseridHash: "",
         appParameters: {
@@ -41,10 +41,10 @@ export function assemblyParams(att: SignedAttRequest) {
     return attestationParams;
 }
 
-function assemblyRequest(request: AttNetworkRequest) {
+function assemblyRequest(_: AttNetworkRequest) {
     return [];
 }
 
-function assemblyResponse(reponseResolve: AttNetworkResponseResolve[]) {
+function assemblyResponse(_: AttNetworkResponseResolve[]) {
     return [];
 }
