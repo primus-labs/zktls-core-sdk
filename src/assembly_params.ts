@@ -2,12 +2,15 @@ import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest } from '
 
 export function assemblyParams(att: SignedAttRequest) {
     let padoUrl, proxyUrl, modelType = "proxytls";
-    padoUrl = process.env.PRIMUS_PROXY_URL;
-    proxyUrl = process.env.PROXY_URL;
+    const ENV = process.env;
+    const NODE_ENV = ENV.NODE_ENV;
+    console.log('--------------process.env.NODE_ENV', NODE_ENV)
+    padoUrl =  'wss://api-dev.padolabs.org/algorithm-proxyV2';
+    proxyUrl = 'wss://api-dev.padolabs.org/algoproxyV2';
     const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams}, appSignature } = att
     let host = new URL(request.url).host;
     if (attMode?.algorithmType === "mpctls") {
-        padoUrl = process.env.PRIMUS_MPC_URL;
+        padoUrl = "wss://api-dev.padolabs.org/algorithmV2";
         modelType = "mpctls"
     }
     let timestamp = (+ new Date()).toString();
@@ -29,7 +32,7 @@ export function assemblyParams(att: SignedAttRequest) {
             appId: appId,
             appSignParameters: JSON.stringify(att.attRequest),
             appSignature: appSignature,
-            additionParams
+            additionParams: additionParams || ''
         },
         reqType: "web",
         host,

@@ -2,7 +2,7 @@ export type AttNetworkRequest = {
     url: string,
     header: object,
     method: string,
-    body: string // TODO
+    body: any
 }
 
 export type AttNetworkResponseResolve = {

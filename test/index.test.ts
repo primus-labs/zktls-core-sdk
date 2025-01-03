@@ -21,8 +21,9 @@ describe('test', () => {
     it('generate', async () => {
         // 1.
         const zkTLS = new PrimusCoreTLS();
-        const result = await zkTLS.init(appId, appSecret);
-        console.log("-------------init result=", result);
+        // const result =
+            await zkTLS.init(appId, appSecret);
+        // console.log("-------------init result=", result);
         // 2.
         let request = {
             url: 'https://www.binance.com/bapi/accounts/v2/public/account/ip/country-city-short',
@@ -37,7 +38,7 @@ describe('test', () => {
         }]
         const userAddr = '0x3B86401865D9C17A51C51D6D5f5aabA733Dd8E14'
         const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves, userAddr)
-        console.log("-------------generateRequestParams result=", generateRequestParamsRes);
+        // console.log("-------------generateRequestParams result=", generateRequestParamsRes);
         // 3.
         // const signParams = generateRequestParamsRes.toJsonString()
         //  console.log("-------------sign signParams=", signParams);

@@ -4,7 +4,7 @@ import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, Attesta
 // import { ZkAttestationError } from './error'
 import { AttRequest } from './classes/AttRequest'
 import { encodeAttestation } from "./utils";
-import { init, getAttestation, getAttestationResult } from "./primus_zk";
+import { getAttestation, getAttestationResult } from "./primus_zk";
 import { assemblyParams } from './assembly_params';
 
 class PrimusCoreTLS {
@@ -19,7 +19,8 @@ class PrimusCoreTLS {
   async init(appId: string, appSecret: string): Promise<string | boolean> {
     this.appId = appId
     this.appSecret = appSecret
-    return await init();
+    // await init()
+    return '';
   }
 
   generateRequestParams(request: AttNetworkRequest, 
@@ -49,20 +50,20 @@ class PrimusCoreTLS {
     }
   }
 
-  async startAttestation(attRequest: AttRequest): Promise<Attestation> {
+  async startAttestation(attRequest: AttRequest): Promise<any> {
     try {
       const signParams = attRequest.toJsonString()
-      console.log("-------------sign signParams=", signParams);
+      // console.log("-------------sign signParams=", signParams);
       const signedAttRequest = await this.sign(signParams);
-      console.log("-------------sign result=", signedAttRequest);
+      // console.log("-------------sign result=", signedAttRequest);
       const attParams = assemblyParams(signedAttRequest);
       console.log("-------------assemblyParams result=", attParams);
       const getAttestationRes = await getAttestation(attParams);
       console.log("-------------getAttestation result=", getAttestationRes);
-      const res = await getAttestationResult();
+      const res:any = await getAttestationResult();
       // TODO output: JSON.parse(res.content.encodedData)
       console.log("startAttestation res=", res);
-      return Promise.resolve(res.content.encodedData)
+      return Promise.resolve(res?.content?.encodedData)
     } catch (e: any) {
       return Promise.reject(e)
     }
