@@ -21,8 +21,7 @@ async function test() {
             parsePath: '$.code',
             parseType: 'string'
         }]
-        const userAddr = '0x3B86401865D9C17A51C51D6D5f5aabA733Dd8E14'
-        const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves, userAddr)
+        const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves)
 
         // console.log("-------------generateRequestParams result=", generateRequestParamsRes);
         // 3.

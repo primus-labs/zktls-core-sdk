@@ -20,7 +20,7 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
         credVersion: "1.0.5",
         modelType: modelType, // one of [mpctls, proxytls]
         user: {
-            userid: "",
+            userid: "0",
             address: userAddress,
             token: "",
         },
