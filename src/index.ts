@@ -56,11 +56,8 @@ class PrimusCoreTLS {
   async startAttestation(attRequest: AttRequest): Promise<any> {
     try {
       const signParams = attRequest.toJsonString()
-      // console.log("-------------sign signParams=", signParams);
       const signedAttRequest = await this.sign(signParams);
-      // console.log("-------------sign result=", signedAttRequest);
       const attParams = assemblyParams(signedAttRequest, this.algoUrls);
-      console.log("-------------assemblyParams result=", attParams);
       const getAttestationRes = await getAttestation(attParams);
       console.log("-------------getAttestation result=", getAttestationRes);
       const res:any = await getAttestationResult();
