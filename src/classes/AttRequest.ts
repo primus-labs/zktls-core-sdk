@@ -20,7 +20,7 @@ export class AttRequest {
     this.attMode = {
       algorithmType: 'proxytls',
       resultType: 'plain'
-    } // TODO
+    }
     this.request = request
     this.responseResolves = responseResolves
   }

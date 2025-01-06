@@ -33,7 +33,7 @@ exports.getAttestation = async (paramsObj) => {
   console.log('enter getAttestation. params:', params);
   const result = await callAlgorithm(params);
   console.log('leave getAttestation. result:', result);
-  return result;
+  return JSON.parse(result);
 };
 
 
@@ -56,7 +56,10 @@ exports.getAttestationResult = async (timeout = 2 * 60 * 1000) => {
       if (resObj && (resObj.retcode == "0" || resObj.retcode == "2")) {
         resolve(resObj);
       } else if (timeGap > timeout) {
-        reject('timeout');
+        reject({
+          code: 'timeout',
+          data: resObj
+        });
       } else {
         setTimeout(tick, 1000);
       }

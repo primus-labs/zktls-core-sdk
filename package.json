@@ -13,7 +13,7 @@
     "./dist"
   ],
   "scripts": {
-    "build": "cross-env NODE_ENV=production && rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/ && cp -f src/primus_zk.js dist/" ,
+    "build": "cross-env NODE_ENV=production && rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/ && cp -f src/primus_zk.js dist/",
     "build:test": "cross-env NODE_ENV=test && rm -rf dist && tsc --build tsconfig.json",
     "lint": "eslint -c .eslintrc --ext .ts src",
     "format": "prettier --check --write src/**/*.ts  --config .prettierrc",
@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "ethers": "^5.7.2",
+    "uuid": "^11.0.4",
     "ws": "^8.18.0"
   }
 }

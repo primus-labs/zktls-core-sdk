@@ -14,7 +14,7 @@ export class AlgorithmUrls {
   }
   async fetchNodes() {
     const fetNodesUrl = `${BASE_SERVICE_URL}/public/algo/nodes`
-    console.time('speedTest')
+    // console.time('speedTest')
     const res = await sendRequest(fetNodesUrl)
     const that = this
     if (res?.rc === 0) {
@@ -30,16 +30,16 @@ export class AlgorithmUrls {
             that.primusProxyUrl = `wss://${item.algorithmDomain}/algorithm-proxyV2`;
             that.proxyUrl = `wss://${item.algoProxyDomain}/algoproxyV2`;
             isInited = true;
-            console.timeEnd('speedTest')
+            // console.timeEnd('speedTest')
           }
           ws.close();
         };
-        ws.onerror = function () {
+        // ws.onerror = function () {
           // console.log('-------updateAlgoUrl ws onerror', e);
-        };
-        ws.onclose = function () {
+        // };
+        // ws.onclose = function () {
           // console.log('-------updateAlgoUrl ws onclose', e);
-        };
+        // };
       });
     }
   }

@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest } from './index.d'
 import { AlgorithmUrls } from './classes/AlgorithmUrls';
 export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUrls) {
@@ -6,6 +7,7 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
     let modelType = "proxytls";
     const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams}, appSignature } = att
     let host = new URL(request.url).host;
+    const requestid = uuidv4();
     if (attMode?.algorithmType === "mpctls") {
         padoUrl = primusMpcUrl;
         modelType = "mpctls"
@@ -13,12 +15,12 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
     let timestamp = (+ new Date()).toString();
     const attestationParams = {
         source: "source", // not empty
-        requestid: "d9415490-3bc3-49ac-93ca-97165aa2a4a1", // todo:auto generate
-        padoUrl, // should set
-        proxyUrl, // should set
-        getdatatime: timestamp, // todo:auto generate
+        requestid,
+        padoUrl,
+        proxyUrl,
+        getdatatime: timestamp,
         credVersion: "1.0.5",
-        modelType: modelType, // one of [mpctls, proxytls]
+        modelType, // one of [mpctls, proxytls]
         user: {
             userid: "0",
             address: userAddress,
@@ -35,8 +37,7 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
         host,
         requests: assemblyRequest(request),
         responses: assemblyResponse(responseResolves),
-        templateId: "5555555555555555555",
-        PADOSERVERURL: "https://api-dev.padolabs.org",
+        templateId: "",
         padoExtensionVersion: "0.3.21"
     };
     return attestationParams;
