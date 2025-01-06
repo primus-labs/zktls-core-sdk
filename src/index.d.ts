@@ -1,8 +1,8 @@
 export type AttNetworkRequest = {
     url: string,
-    header: object,
     method: string,
-    body: any
+    header?: object,
+    body?: any
 }
 
 export type AttNetworkResponseResolve = {
