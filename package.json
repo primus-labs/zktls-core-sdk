@@ -13,8 +13,8 @@
     "./dist"
   ],
   "scripts": {
-    "build": "cross-env NODE_ENV=production && rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/ && cp -f src/primus_zk.js dist/",
-    "build:test": "cross-env NODE_ENV=test && rm -rf dist && tsc --build tsconfig.json",
+    "build": "rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/ && cp -f src/primus_zk.js dist/",
+    "build:test": "rm -rf dist && tsc --build tsconfig.json",
     "lint": "eslint -c .eslintrc --ext .ts src",
     "format": "prettier --check --write src/**/*.ts  --config .prettierrc",
     "pretest:integration": "npm run build && npm link",
@@ -26,8 +26,6 @@
     "@types/node": "^20.12.7",
     "@typescript-eslint/eslint-plugin": "^7.7.0",
     "@typescript-eslint/parser": "^7.7.0",
-    "cross-env": "^7.0.3",
-    "dotenv": "^16.4.7",
     "eslint": "^8.56.0",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-prefer-arrow": "^1.2.3",

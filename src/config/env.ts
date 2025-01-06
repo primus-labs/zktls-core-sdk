@@ -1,10 +1,21 @@
-import * as dotenv from 'dotenv';
+const pEnv = 'production'
+const pEnvMap = {
+  production: {
+    PRIMUS_PROXY_URL: 'wss://api.padolabs.org/algorithm-proxyV2',
+    PRIMUS_MPC_URL: 'wss://api.padolabs.org/algorithmV2',
+    PROXY_URL: 'wss://api.padolabs.org/algoproxyV2',
+    BASE_SERVICE_URL: 'https://api.padolabs.org',
+  },
+  test: {
+    PRIMUS_PROXY_URL: 'wss://api-dev.padolabs.org/algorithm-proxyV2',
+    PRIMUS_MPC_URL: 'wss://api-dev.padolabs.org/algorithmV2',
+    PROXY_URL: 'wss://api-dev.padolabs.org/algoproxyV2',
+    BASE_SERVICE_URL: 'https://api-dev.padolabs.org',
+  }
+}
 
-const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env.test';
-dotenv.config({ path: envFile });
-export const NODE_ENV = process.env.NODE_ENV;
-export const PRIMUS_PROXY_URL = process.env.PRIMUS_PROXY_URL || ''
-export const PRIMUS_MPC_URL = process.env.PRIMUS_MPC_URL || ''
-export const PROXY_URL = process.env.PROXY_URL || ''
-export const BASE_SERVICE_URL = process.env.BASE_SERVICE_URL || ''
 
+export const PRIMUS_PROXY_URL = pEnvMap[pEnv].PRIMUS_PROXY_URL
+export const PRIMUS_MPC_URL = pEnvMap[pEnv].PRIMUS_MPC_URL
+export const PROXY_URL = pEnvMap[pEnv].PROXY_URL
+export const BASE_SERVICE_URL = pEnvMap[pEnv].BASE_SERVICE_URL
