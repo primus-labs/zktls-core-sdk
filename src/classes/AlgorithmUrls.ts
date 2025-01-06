@@ -30,12 +30,10 @@ export class AlgorithmUrls {
           }
           ws.close();
         };
-        // ws.onerror = function () {
-          // console.log('updateAlgoUrl ws onerror', e);
-        // };
-        // ws.onclose = function () {
-          // console.log('updateAlgoUrl ws onclose', e);
-        // };
+        ws.onerror = function () {
+        };
+        ws.onclose = function () {
+        };
       });
     }
   }
