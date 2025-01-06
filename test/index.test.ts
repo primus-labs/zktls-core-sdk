@@ -165,6 +165,7 @@ describe('test', () => {
             // await delay(800);
             const attestation = await zkTLS.startAttestation(generateRequestParamsRes);
             console.log("attestation=", attestation);
+            console.log("attestation.data=", attestation.data);
             const verifyAttestationRes = zkTLS.verifyAttestation(attestation)
             console.log("verifyAttestationRes=", verifyAttestationRes);
         } catch (e) {

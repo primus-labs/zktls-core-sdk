@@ -19,7 +19,7 @@ class PrimusCoreTLS {
     this.appId = '';
     this.appSecret = '';
     this.algoUrls = new AlgorithmUrls()
-    console.log('-----------algoUrls1',this.algoUrls.toJsonString())
+    console.log('algoUrls:',this.algoUrls.toJsonString())
   }
 
   async init(appId: string, appSecret: string): Promise<string | boolean> {
@@ -60,9 +60,8 @@ class PrimusCoreTLS {
       const signParams = attRequest.toJsonString()
       const signedAttRequest = await this.sign(signParams);
       const attParams = assemblyParams(signedAttRequest, this.algoUrls);
-      // console.log("-------------attParams=", attParams);
       const getAttestationRes = await getAttestation(attParams);
-      console.log("-------------getAttestation result=", getAttestationRes);
+      console.log("getAttestation result=", getAttestationRes);
       if (getAttestationRes.retcode !== "0") {
         return Promise.reject(new ZkAttestationError('00001'))
       }
@@ -112,4 +111,4 @@ class PrimusCoreTLS {
 
 }
 
-export { PrimusCoreTLS, AttRequest };
+export { PrimusCoreTLS, Attestation };

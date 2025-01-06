@@ -19,9 +19,7 @@ const callAlgorithm = async (params) => {
 
 exports.init = async () => {
   const params = `{"method":"init","version":"1.1.1","params":{}}`;
-  console.log('enter init. params:', params);
   const result = await callAlgorithm(params);
-  console.log('leave init. result:', result);
   return result;
 };
 
@@ -30,16 +28,13 @@ exports.getAttestation = async (paramsObj) => {
 
   const _paramsObj = { method: "getAttestation", version: "1.1.1", params: paramsObj };
   const params = JSON.stringify(_paramsObj);
-  console.log('enter getAttestation. params:', params);
   const result = await callAlgorithm(params);
-  console.log('leave getAttestation. result:', result);
   return JSON.parse(result);
 };
 
 
 exports.getAttestationResult = async (timeout = 2 * 60 * 1000) => {
   const params = `{"method":"getAttestationResult","version":"1.1.1","params":{"requestid":"1"}}`;
-  console.log('enter getAttestationResult. params:', params);
 
   return new Promise((resolve, reject) => {
     const start = performance.now();
@@ -51,7 +46,6 @@ exports.getAttestationResult = async (timeout = 2 * 60 * 1000) => {
         resObj = JSON.parse(res);
       } catch (err) {
       }
-      // console.log("resObj", resObj);
 
       if (resObj && (resObj.retcode == "0" || resObj.retcode == "2")) {
         resolve(resObj);
