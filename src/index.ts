@@ -19,7 +19,6 @@ class PrimusCoreTLS {
     this.appId = '';
     this.appSecret = '';
     this.algoUrls = new AlgorithmUrls()
-    console.log('algoUrls:',this.algoUrls.toJsonString())
   }
 
   async init(appId: string, appSecret: string): Promise<string | boolean> {
@@ -31,7 +30,7 @@ class PrimusCoreTLS {
   generateRequestParams(request: AttNetworkRequest, 
     responseResolves: AttNetworkResponseResolve[], 
     userAddress?: string): AttRequest {
-    const userAddr = userAddress? userAddress: "0x7ab44DE0156925fe0c24482a2cDe48C465e47573";
+    const userAddr = userAddress? userAddress: "0x0000000000000000000000000000000000000000";
     return new AttRequest({
       appId: this.appId,
       request,
@@ -61,12 +60,10 @@ class PrimusCoreTLS {
       const signedAttRequest = await this.sign(signParams);
       const attParams = assemblyParams(signedAttRequest, this.algoUrls);
       const getAttestationRes = await getAttestation(attParams);
-      console.log("getAttestation result=", getAttestationRes);
       if (getAttestationRes.retcode !== "0") {
         return Promise.reject(new ZkAttestationError('00001'))
       }
       const res:any = await getAttestationResult();
-      console.log("getAttestationResult res=", res );
       const {retcode, content, details } = res
       if (retcode === '0') {
         const { balanceGreaterThanBaseValue, signature, encodedData, extraData} = content
@@ -104,7 +101,6 @@ class PrimusCoreTLS {
     const encodeData = encodeAttestation(attestation);
     const signature = attestation.signatures[0];
     const result = ethers.utils.recoverAddress(encodeData, signature);
-    console.log("sdk verifyAttestation recover address is ", result);
     const verifyResult = PADOADDRESS.toLowerCase() === result.toLowerCase();
     return verifyResult
   }

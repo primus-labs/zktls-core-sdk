@@ -22,7 +22,6 @@ export class AlgorithmUrls {
         let ws = new WebSocket(`wss://${item.algoProxyDomain}/algoproxyV2`);
         ws.onopen = async function () {
           if (!isInited) {
-            console.log('updateAlgoUrl onopen update url new',item.algorithmDomain);
             that.primusMpcUrl = `wss://${item.algorithmDomain}/algorithmV2`;
             that.primusProxyUrl = `wss://${item.algorithmDomain}/algorithm-proxyV2`;
             that.proxyUrl = `wss://${item.algoProxyDomain}/algoproxyV2`;

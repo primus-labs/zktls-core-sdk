@@ -5,7 +5,6 @@ global.WebSocket = require('ws');
 Module_callAlgorithm = null;
 const Module = require("./algorithm/client_plugin.js");
 Module.onRuntimeInitialized = async () => {
-  console.log("Module Initialized OK.");
   Module_callAlgorithm = Module.cwrap('callAlgorithm', 'string', ['string']);
 }
 
