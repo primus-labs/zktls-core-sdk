@@ -7,6 +7,8 @@ npm install
 ```
 
 
-## Usage
+## test
 
-See [test_local_1.js](./test_local_1.js).
+```sh
+npm run test
+```
