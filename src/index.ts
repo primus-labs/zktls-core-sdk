@@ -5,7 +5,8 @@ import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, Attesta
 import { AttRequest } from './classes/AttRequest'
 import { AlgorithmUrls } from "./classes/AlgorithmUrls";
 import { encodeAttestation } from "./utils";
-import { init, getAttestation, getAttestationResult } from "./primus_zk";
+// import { init, getAttestation, getAttestationResult } from "./primus_zk";
+import { init, getAttestation, getAttestationResult } from "./primus_zk_so";
 import { assemblyParams } from './assembly_params';
 import { ZkAttestationError } from './classes/Error'
 import { AttestationErrorCode } from 'config/error';
@@ -59,6 +60,7 @@ class PrimusCoreTLS {
       const signParams = attRequest.toJsonString()
       const signedAttRequest = await this.sign(signParams);
       const attParams = assemblyParams(signedAttRequest, this.algoUrls);
+      console.log('attParamsattParamsattParamsattParams:\n', JSON.stringify(attParams));
       const getAttestationRes = await getAttestation(attParams);
       if (getAttestationRes.retcode !== "0") {
         return Promise.reject(new ZkAttestationError('00001'))
