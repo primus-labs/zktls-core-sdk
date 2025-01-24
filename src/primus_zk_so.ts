@@ -12,7 +12,7 @@ var libExample: any = null;
 var Module_callAlgorithm: any = null;
 const callAlgorithm = async (params: string) => {
   if (!Module_callAlgorithm) {
-    const libPath = path.resolve(__dirname, 'algorithm', 'libclient_plugin');
+    const libPath = path.resolve(__dirname, 'algorithm', 'libprimus-zk');
     libExample = ffi.Library(libPath, {
       'callAlgorithm': [charPtr, [charPtr]],
     });
