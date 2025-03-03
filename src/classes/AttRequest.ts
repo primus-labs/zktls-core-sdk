@@ -24,6 +24,7 @@ export class AttRequest {
     }
     this.request = request
     this.responseResolves = responseResolves
+    this.sslCipher = "ECDHE-RSA-AES128-GCM-SHA256";
   }
   setAdditionParams(additionParams: string) {
     this.additionParams = additionParams
