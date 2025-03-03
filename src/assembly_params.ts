@@ -5,7 +5,7 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
     const { primusMpcUrl, primusProxyUrl, proxyUrl } = algorithmUrls
     let padoUrl = primusProxyUrl;
     let modelType = "proxytls";
-    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams}, appSignature } = att
+    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams, sslCipher}, appSignature } = att
     let host = new URL(request.url).host;
     const requestid = uuidv4();
     if (attMode?.algorithmType === "mpctls") {
@@ -38,7 +38,8 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
         requests: assemblyRequest(request),
         responses: assemblyResponse(responseResolves),
         templateId: "",
-        padoExtensionVersion: "0.3.21"
+        padoExtensionVersion: "0.3.21",
+        cipher: sslCipher,
     };
     return attestationParams;
 }

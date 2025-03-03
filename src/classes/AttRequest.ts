@@ -1,4 +1,4 @@
-import type { AttMode, AttNetworkRequest, AttNetworkResponseResolve, BaseAttestationParams } from '../index.d'
+import type { AttMode, AttNetworkRequest, AttNetworkResponseResolve, BaseAttestationParams, AttSslCipher} from '../index.d'
 import { getInstanceProperties } from '../utils'
 
 export class AttRequest {
@@ -11,6 +11,7 @@ export class AttRequest {
   attMode?: AttMode;
   attConditions?: object;
   additionParams?: string;
+  sslCipher?: AttSslCipher;
 
   constructor(baseAttestationParams: BaseAttestationParams) {
     const { appId, userAddress, request, responseResolves } = baseAttestationParams
@@ -35,6 +36,9 @@ export class AttRequest {
   }
   setAttConditions(attConditions: Object) {
     this.attConditions = attConditions
+  }
+  setSslCipher(sslCipher :AttSslCipher) {
+    this.sslCipher = sslCipher;
   }
   toJsonString() {
     return JSON.stringify(getInstanceProperties(this));

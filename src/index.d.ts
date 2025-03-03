@@ -30,6 +30,7 @@ export type Attestation = {
 
 export type AttModeAlgorithmType = 'mpctls' | 'proxytls'
 export type AttModeResultType = 'plain' | 'cipher'
+export type AttSslCipher = 'ECDHE-RSA-AES128-GCM-SHA256' | 'ECDHE-ECDSA-AES128-GCM-SHA256'
 export type AttMode = {
   algorithmType: AttModeAlgorithmType;
   resultType: AttModeResultType;
@@ -47,6 +48,7 @@ export type FullAttestationParams = BaseAttestationParams & {
     attMode?: AttMode;
     attConditions?: object;
     additionParams?: string;
+    sslCipher?: AttSslCipher;
   }
 
 export type SignedAttRequest = {
