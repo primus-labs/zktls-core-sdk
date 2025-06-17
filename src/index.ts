@@ -1,11 +1,10 @@
 import { ethers } from 'ethers';
 import { PADOADDRESS } from './config/constants'
 import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, Attestation } from './index.d'
-// import { ZkAttestationError } from './error'
 import { AttRequest } from './classes/AttRequest'
 import { AlgorithmUrls } from "./classes/AlgorithmUrls";
 import { encodeAttestation } from "./utils";
-import { init, getAttestation, getAttestationResult } from "./primus_zk";
+import { init, getAttestation, getAttestationResult, AlgorithmBackend } from "./primus_zk";
 import { assemblyParams } from './assembly_params';
 import { ZkAttestationError } from './classes/Error'
 import { AttestationErrorCode } from 'config/error';
@@ -21,16 +20,16 @@ class PrimusCoreTLS {
     this.algoUrls = new AlgorithmUrls()
   }
 
-  async init(appId: string, appSecret: string): Promise<string | boolean> {
+  async init(appId: string, appSecret: string, mode: AlgorithmBackend = 'auto'): Promise<string | boolean> {
     this.appId = appId
     this.appSecret = appSecret
-    return await init();
+    return await init(mode);
   }
 
-  generateRequestParams(request: AttNetworkRequest, 
-    responseResolves: AttNetworkResponseResolve[], 
+  generateRequestParams(request: AttNetworkRequest,
+    responseResolves: AttNetworkResponseResolve[],
     userAddress?: string): AttRequest {
-    const userAddr = userAddress? userAddress: "0x0000000000000000000000000000000000000000";
+    const userAddr = userAddress ? userAddress : "0x0000000000000000000000000000000000000000";
     return new AttRequest({
       appId: this.appId,
       request,
@@ -63,10 +62,10 @@ class PrimusCoreTLS {
       if (getAttestationRes.retcode !== "0") {
         return Promise.reject(new ZkAttestationError('00001'))
       }
-      const res:any = await getAttestationResult();
-      const {retcode, content, details } = res
+      const res: any = await getAttestationResult();
+      const { retcode, content, details } = res
       if (retcode === '0') {
-        const { balanceGreaterThanBaseValue, signature, encodedData, extraData} = content
+        const { balanceGreaterThanBaseValue, signature, encodedData, extraData } = content
         if (balanceGreaterThanBaseValue === 'true' && signature) {
           return Promise.resolve(JSON.parse(encodedData))
         } else if (!signature || balanceGreaterThanBaseValue === 'false') {
@@ -87,10 +86,10 @@ class PrimusCoreTLS {
       } else if (retcode === '2') {
         const { errlog: { code } } = details;
         return Promise.reject(new ZkAttestationError(code, '', res))
-      } 
+      }
     } catch (e: any) {
       if (e?.code === 'timeout') {
-        return Promise.reject(new ZkAttestationError('00002','', e.data))
+        return Promise.reject(new ZkAttestationError('00002', '', e.data))
       } else {
         return Promise.reject(e)
       }

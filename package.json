@@ -13,12 +13,14 @@
     "./dist"
   ],
   "scripts": {
-    "build": "rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/ && cp -f src/primus_zk.js dist/",
+    "build0": "rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/ && cp -f src/primus_zk.js dist/",
+    "build": "rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/",
     "build:test": "rm -rf dist && tsc --build tsconfig.json",
     "lint": "eslint -c .eslintrc --ext .ts src",
     "format": "prettier --check --write src/**/*.ts  --config .prettierrc",
     "pretest:integration": "npm run build && npm link",
     "publish": "npm publish --access public",
+    "install": "node scripts/native-install.js",
     "test": "jest --forceExit"
   },
   "devDependencies": {
@@ -30,6 +32,7 @@
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-prefer-arrow": "^1.2.3",
     "jest": "^29.7.0",
+    "node-gyp": "^11.2.0",
     "prettier": "^3.2.5",
     "prettier-package-json": "^2.8.0",
     "ts-jest": "^29.1.4",
@@ -50,6 +53,7 @@
   },
   "dependencies": {
     "ethers": "^5.7.2",
+    "node-addon-api": "^8.3.1",
     "uuid": "^11.0.4",
     "ws": "^8.18.0"
   }
