@@ -5,9 +5,9 @@
 
 extern "C" {
 const char *callAlgorithm(const char *input);
+}
 std::string __callAlgorithm(const std::string &input) {
   return std::string(callAlgorithm(input.c_str()));
-}
 }
 
 // Function pointer type
@@ -38,12 +38,8 @@ Napi::String CallAlgorithmWrapped(const Napi::CallbackInfo &info) {
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   printf("Init\n");
 
-  try {
     exports.Set(Napi::String::New(env, "callAlgorithm"),
                 Napi::Function::New(env, CallAlgorithmWrapped));
-  } catch (const std::exception &e) {
-    Napi::Error::New(env, e.what()).ThrowAsJavaScriptException();
-  }
   return exports;
 }
 
