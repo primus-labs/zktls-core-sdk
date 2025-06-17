@@ -7,7 +7,7 @@ export type AlgorithmBackend = 'auto' | 'native' | 'wasm';
 async function initAlgorithm(mode: AlgorithmBackend = 'auto'): Promise<(params: string) => Promise<string>> {
   const tryLoadNative = (): ((params: string) => Promise<string>) | null => {
     try {
-      const addon = require(path.join(__dirname, '../build/Release/addon.node'));
+      const addon = require(path.join(__dirname, '../build/Release/primus-zktls-native.node'));
       console.log('[info] Native addon loaded.');
       return async (params: string) => addon.callAlgorithm(params);
     } catch (e) {

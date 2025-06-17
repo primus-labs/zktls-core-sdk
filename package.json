@@ -10,7 +10,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "./dist"
+    "./dist",
+    "./scripts",
+    "native.cc",
+    "binding.gyp"
   ],
   "scripts": {
     "build": "rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/",
