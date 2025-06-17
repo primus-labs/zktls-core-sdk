@@ -2,7 +2,7 @@
     "targets": [
         {
             "target_name": "primus-zktls-native",
-            "sources": ["native.cc"],
+            "sources": ["native/native.cc"],
             "cflags": ["-std=c++17", "-fexceptions"],
             "cflags_cc": ["-std=c++17", "-fexceptions"],
             "include_dirs": ["<!(node -p \"require('node-addon-api').include_dir\")"],
@@ -12,13 +12,11 @@
                 [
                     "OS=='mac'",
                     {
-                        "libraries": ["-L<(module_root_dir)/src/algorithm", "-lprimus-zk"],
+                        "libraries": ["-L<(module_root_dir)/native", "-lprimus-zk"],
                         "link_settings": {
                             "libraries": [
                                 "-Wl,-rpath,@loader_path",
-                                "-Wl,-rpath,<(module_root_dir)",
-                                "-Wl,-rpath,<(module_root_dir)/src/algorithm",
-                                "-Wl,-rpath,<(module_root_dir)/dist/algorithm",
+                                "-Wl,-rpath,<(module_root_dir)/native",
                             ]
                         },
                     },
@@ -26,13 +24,11 @@
                 [
                     "OS=='linux'",
                     {
-                        "libraries": ["-L<(module_root_dir)/src/algorithm", "-lprimus-zk"],
+                        "libraries": ["-L<(module_root_dir)/native", "-lprimus-zk"],
                         "link_settings": {
                             "libraries": [
                                 "-Wl,-rpath,'$$ORIGIN'",
-                                "-Wl,-rpath,<(module_root_dir)",
-                                "-Wl,-rpath,<(module_root_dir)/src/algorithm",
-                                "-Wl,-rpath,<(module_root_dir)/dist/algorithm",
+                                "-Wl,-rpath,<(module_root_dir)/native",
                             ]
                         },
                     },

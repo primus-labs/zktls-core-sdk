@@ -11,8 +11,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "./dist",
-    "./scripts",
-    "native.cc",
+    "./native",
     "binding.gyp"
   ],
   "scripts": {
@@ -22,7 +21,7 @@
     "format": "prettier --check --write src/**/*.ts  --config .prettierrc",
     "pretest:integration": "npm run build && npm link",
     "publish": "npm publish --access public",
-    "install": "node scripts/native-install.js",
+    "install": "node native/native-install.js",
     "test": "jest --forceExit"
   },
   "devDependencies": {
