@@ -13,7 +13,6 @@
     "./dist"
   ],
   "scripts": {
-    "build0": "rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/ && cp -f src/primus_zk.js dist/",
     "build": "rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/",
     "build:test": "rm -rf dist && tsc --build tsconfig.json",
     "lint": "eslint -c .eslintrc --ext .ts src",
