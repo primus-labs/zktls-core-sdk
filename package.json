@@ -10,17 +10,18 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "./dist"
+    "./dist",
+    "./native",
+    "binding.gyp"
   ],
   "scripts": {
-    "build0": "rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/ && cp -f src/primus_zk.js dist/",
     "build": "rm -rf dist && tsc --build tsconfig.json && cp -f src/algorithm/* dist/algorithm/",
     "build:test": "rm -rf dist && tsc --build tsconfig.json",
     "lint": "eslint -c .eslintrc --ext .ts src",
     "format": "prettier --check --write src/**/*.ts  --config .prettierrc",
     "pretest:integration": "npm run build && npm link",
     "publish": "npm publish --access public",
-    "install": "node scripts/native-install.js",
+    "install": "node native/native-install.js",
     "test": "jest --forceExit"
   },
   "devDependencies": {
