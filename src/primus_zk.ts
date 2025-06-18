@@ -53,14 +53,21 @@ async function initAlgorithm(mode: AlgorithmBackend = 'auto'): Promise<(params: 
 
   // auto
   const native = await tryLoadNative();
-  if (native) return native;
+  if (native) {
+    console.log("Use Native Mode.");
+    return native
+  };
 
+  console.log("Use WASM Mode.");
   return await tryLoadWasm();
 }
 
 let callAlgorithm = null;
 export const init = async (mode: AlgorithmBackend = 'auto') => {
   callAlgorithm = await initAlgorithm(mode);
+
+  const logParams = `{"method":"setLogLevel","version":"1.1.1","params":{"logLevel":"error"}}`;
+  const logResult = await callAlgorithm(logParams);
 
   const params = `{"method":"init","version":"1.1.1","params":{}}`;
   const result = await callAlgorithm(params);
@@ -92,7 +99,7 @@ export const getAttestationResult = async (timeout = 2 * 60 * 1000) => {
       }
 
       if (resObj && (resObj.retcode == "0" || resObj.retcode == "2")) {
-        console.log("resObj:", resObj);
+        // console.log("resObj:", resObj);
         resolve(resObj);
       } else if (timeGap > timeout) {
         reject({
