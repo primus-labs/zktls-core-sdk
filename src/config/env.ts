@@ -1,9 +1,9 @@
 const pEnv = 'production'
 const pEnvMap = {
   production: {
-    PRIMUS_PROXY_URL: 'wss://api1.padolabs.org/algorithm-proxyV3',
-    PRIMUS_MPC_URL: 'wss://api1.padolabs.org/algorithmV3',
-    PROXY_URL: 'wss://api1.padolabs.org/algoproxyV3',
+    PRIMUS_PROXY_URL: 'wss://api2.padolabs.org/algorithm-proxyV3',
+    PRIMUS_MPC_URL: 'wss://api2.padolabs.org/algorithmV3',
+    PROXY_URL: 'wss://api2.padolabs.org/algoproxyV3',
     BASE_SERVICE_URL: 'https://api.padolabs.org',
   },
   test: {
