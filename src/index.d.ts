@@ -8,7 +8,8 @@ export type AttNetworkRequest = {
 export type AttNetworkResponseResolve = {
     keyName: string,
     parsePath: string,
-    parseType?: string
+    parseType?: string,
+    op?: string,
 }
 
 export type Attestor = {
@@ -49,6 +50,7 @@ export type FullAttestationParams = BaseAttestationParams & {
     attConditions?: object;
     additionParams?: string;
     sslCipher?: AttSslCipher;
+    noProxy?: boolean;
   }
 
 export type SignedAttRequest = {

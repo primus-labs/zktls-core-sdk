@@ -2,16 +2,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest } from './index.d'
 import { AlgorithmUrls } from './classes/AlgorithmUrls';
 export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUrls) {
-    const { primusMpcUrl, primusProxyUrl, proxyUrl } = algorithmUrls
+    let { primusMpcUrl, primusProxyUrl, proxyUrl } = algorithmUrls
     let padoUrl = primusProxyUrl;
     let modelType = "proxytls";
-    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams, sslCipher}, appSignature } = att
+    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams, sslCipher, noProxy}, appSignature } = att
     let host = new URL(request.url).host;
     const requestid = uuidv4();
     if (attMode?.algorithmType === "mpctls") {
         padoUrl = primusMpcUrl;
         modelType = "mpctls"
+        if (noProxy) {
+            proxyUrl = ""; // only supported under mpctls model
+        }
     }
+    console.log('assemblyParams', padoUrl, proxyUrl, modelType);
     let timestamp = (+ new Date()).toString();
     const attestationParams = {
         source: "source", // not empty
@@ -55,14 +59,35 @@ function assemblyRequest(request: AttNetworkRequest) {
     return [formatRequest]
 }
 
+function _getField(parsePath: string, op?: string) {
+  if (op === "SHA256_EX") {
+    return { "type": "FIELD_ARITHMETIC", "op": "SHA256", "field": parsePath };
+  }
+  return parsePath;
+}
+function _getOp(op?: string) {
+  if (op === "SHA256_EX") {
+    return "REVEAL_HEX_STRING";
+  }
+  return op ?? 'REVEAL_STRING';
+}
+function _getType(op?: string) {
+  if (['>', '>=', '=', '!=', '<', '<=', 'STREQ', 'STRNEQ'].includes(op ?? "")) {
+    return 'FIELD_RANGE';
+  } else if (op === 'SHA256') {
+    return "FIELD_VALUE"
+  }
+  return "FIELD_REVEAL"
+}
+
 function assemblyResponse(responseResolves: AttNetworkResponseResolve[]) {
     const subconditions = responseResolves.map(rR => {
-        const {keyName, parsePath} = rR
+        const {keyName, parsePath, op} = rR
         return {
-            field: parsePath,
+            field: _getField(parsePath, op),
             reveal_id: keyName,
-            op: "REVEAL_STRING",
-            type: "FIELD_REVEAL"
+            op: _getOp(op),
+            type: _getType(op)
         }
     })
     const formatResponse = {

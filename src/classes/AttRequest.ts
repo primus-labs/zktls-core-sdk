@@ -12,6 +12,7 @@ export class AttRequest {
   attConditions?: object;
   additionParams?: string;
   sslCipher?: AttSslCipher;
+  noProxy?: boolean;
 
   constructor(baseAttestationParams: BaseAttestationParams) {
     const { appId, userAddress, request, responseResolves } = baseAttestationParams
@@ -25,6 +26,7 @@ export class AttRequest {
     this.request = request
     this.responseResolves = responseResolves
     this.sslCipher = "ECDHE-RSA-AES128-GCM-SHA256";
+    this.noProxy = true;
   }
   setAdditionParams(additionParams: string) {
     this.additionParams = additionParams
@@ -40,6 +42,9 @@ export class AttRequest {
   }
   setSslCipher(sslCipher :AttSslCipher) {
     this.sslCipher = sslCipher;
+  }
+  setNoProxy(noProxy: boolean) {
+    this.noProxy = noProxy
   }
   toJsonString() {
     return JSON.stringify(getInstanceProperties(this));

@@ -15,7 +15,7 @@ import { PrimusCoreTLS} from '../src/index';
 
 
 describe('test', () => {
-    jest.setTimeout(50000);
+    jest.setTimeout(100000);
     // production
     const appId = "0xe319e567f70e2b2a153cb6ceaa73893648cde180";
     const appSecret = "0x4348563b2178adc171d851bcc27054d7879e07a41263ccfaa3b00d63d056559a";
@@ -154,9 +154,17 @@ describe('test', () => {
                const responseResolves = [{
                 keyName: 'sc',
                 parsePath: '$.sc',
-                parseType: 'string'
+                parseType: 'string',
+                op: 'SHA256',
             }]
-            const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves)
+            const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
+
+            generateRequestParamsRes.setAttMode({
+                algorithmType: "proxytls",
+                resultType: "plain"
+            });
+            generateRequestParamsRes.setNoProxy(false);
+
             // console.log("-------------generateRequestParams result=", generateRequestParamsRes);
             
             // 3.
