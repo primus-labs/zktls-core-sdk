@@ -66,5 +66,71 @@ describe('test', () => {
         }
         
     });
+
+    // it('generateBatchRequestUrl', async () => {
+    //     console.log('--------------generateBatchRequestUrl-process.env', process.env.NODE_ENV)
+    //     try {
+    //         // 1.
+    //         const zkTLS = new PrimusCoreTLS();
+    //         const result = await zkTLS.init(appId, appSecret);
+    //         console.log("-------------init result=", result);
+
+    //         let request = [
+    //             {
+    //                 url: "https://edith.xiaohongshu.com/api/sns/web/v1/system/config",
+    //                 method: "GET",
+    //                 header: {},
+    //                 body: "",
+    //             },
+    //             {
+    //                 url: "https://edith.xiaohongshu.com/api/sns/web/v1/system/config",
+    //                 method: "GET",
+    //                 header: {},
+    //                 body: "",
+    //             }
+    //         ];
+
+    //         const responseResolves = [
+    //             [
+    //                 {
+    //                     keyName: "1",
+    //                     parseType: "json",
+    //                     parsePath: "$",
+    //                     op: "SHA256_EX"
+    //                 }
+    //             ],
+    //             [
+    //                 {
+    //                     keyName: "2",
+    //                     parseType: "json",
+    //                     parsePath: "$",
+    //                     op: "SHA256_EX"
+    //                 }
+    //             ]
+    //         ];
+    //         const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
+
+    //         generateRequestParamsRes.setAttMode({
+    //             algorithmType: "proxytls",
+    //             resultType: "plain"
+    //         });
+    //         generateRequestParamsRes.setNoProxy(false);
+
+    //         // console.log("-------------generateRequestParams result=", generateRequestParamsRes);
+
+    //         // 3.
+    //         // const startAttestationRes =
+    //         // const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    //         // await delay(800);
+    //         const attestation = await zkTLS.startAttestation(generateRequestParamsRes);
+    //         console.log("attestation=", attestation);
+    //         console.log("attestation.data=", attestation.data);
+    //         const verifyAttestationRes = zkTLS.verifyAttestation(attestation)
+    //         console.log("verifyAttestationRes=", verifyAttestationRes);
+    //     } catch (e) {
+    //         console.log('-----------generate error =', e);
+    //     }
+
+    // });
   
 });

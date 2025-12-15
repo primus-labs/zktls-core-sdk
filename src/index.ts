@@ -26,8 +26,8 @@ class PrimusCoreTLS {
     return await init(mode);
   }
 
-  generateRequestParams(request: AttNetworkRequest,
-    responseResolves: AttNetworkResponseResolve[],
+  generateRequestParams(request: AttNetworkRequest | AttNetworkRequest[],
+    responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][],
     userAddress?: string): AttRequest {
     const userAddr = userAddress ? userAddress : "0x0000000000000000000000000000000000000000";
     return new AttRequest({

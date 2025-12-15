@@ -5,8 +5,9 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
     let { primusMpcUrl, primusProxyUrl, proxyUrl } = algorithmUrls
     let padoUrl = primusProxyUrl;
     let modelType = "proxytls";
-    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams, sslCipher, noProxy}, appSignature } = att
-    let host = new URL(request.url).host;
+    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams, sslCipher, noProxy }, appSignature } = att
+    const requestUrl = Array.isArray(request) ? request[0].url : request.url;
+    let host = new URL(requestUrl).host;
     const requestid = uuidv4();
     if (attMode?.algorithmType === "mpctls") {
         padoUrl = primusMpcUrl;
@@ -48,55 +49,63 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
     return attestationParams;
 }
 
-function assemblyRequest(request: AttNetworkRequest) {
-    let { url, header, method, body } = request;
-    const formatRequest = {
-            url,
-            method,
-            headers: {...header,'Accept-Encoding': 'identity'},
-            body,
-        }
-    return [formatRequest]
+function assemblyRequest(request: AttNetworkRequest | AttNetworkRequest[]) {
+    const requests = Array.isArray(request) ? request : [request]
+    return requests.map(({ url, header, method, body }) => ({
+        url,
+        method,
+        headers: {
+            ...header,
+            'Accept-Encoding': 'identity',
+        },
+        body,
+    }))
 }
 
 function _getField(parsePath: string, op?: string) {
-  if (op === "SHA256_EX") {
-    return { "type": "FIELD_ARITHMETIC", "op": "SHA256", "field": parsePath };
-  }
-  return parsePath;
+    if (op === "SHA256_EX") {
+        return { "type": "FIELD_ARITHMETIC", "op": "SHA256", "field": parsePath };
+    }
+    return parsePath;
 }
 function _getOp(op?: string) {
-  if (op === "SHA256_EX") {
-    return "REVEAL_HEX_STRING";
-  }
-  return op ?? 'REVEAL_STRING';
+    if (op === "SHA256_EX") {
+        return "REVEAL_HEX_STRING";
+    }
+    return op ?? 'REVEAL_STRING';
 }
 function _getType(op?: string) {
-  if (['>', '>=', '=', '!=', '<', '<=', 'STREQ', 'STRNEQ'].includes(op ?? "")) {
-    return 'FIELD_RANGE';
-  } else if (op === 'SHA256') {
-    return "FIELD_VALUE"
-  }
-  return "FIELD_REVEAL"
+    if (['>', '>=', '=', '!=', '<', '<=', 'STREQ', 'STRNEQ'].includes(op ?? "")) {
+        return 'FIELD_RANGE';
+    } else if (op === 'SHA256') {
+        return "FIELD_VALUE"
+    }
+    return "FIELD_REVEAL"
 }
 
-function assemblyResponse(responseResolves: AttNetworkResponseResolve[]) {
-    const subconditions = responseResolves.map(rR => {
-        const {keyName, parsePath, op} = rR
+function assemblyResponse(responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][]) {
+    const groups = Array.isArray(responseResolves[0])
+        ? responseResolves as AttNetworkResponseResolve[][]
+        : [responseResolves as AttNetworkResponseResolve[]]
+    return groups.map(group => {
+        const subconditions = group.map(rR => {
+            const { keyName, parsePath, op } = rR
+
+            return {
+                field: _getField(parsePath, op),
+                reveal_id: keyName,
+                op: _getOp(op),
+                type: _getType(op),
+            }
+        })
+
         return {
-            field: _getField(parsePath, op),
-            reveal_id: keyName,
-            op: _getOp(op),
-            type: _getType(op)
+            conditions: {
+                type: "CONDITION_EXPANSION",
+                op: "&",
+                subconditions,
+            },
         }
     })
-    const formatResponse = {
-        conditions: {
-            type:"CONDITION_EXPANSION",
-            op: "&",
-            subconditions
-        }
-    }
-    return [formatResponse];
 }
 

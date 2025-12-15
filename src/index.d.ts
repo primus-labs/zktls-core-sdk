@@ -39,8 +39,8 @@ export type AttMode = {
 
 export type BaseAttestationParams = {
     appId: string;
-    request: AttNetworkRequest;
-    responseResolves: AttNetworkResponseResolve[];
+    request: AttNetworkRequest | AttNetworkRequest[];
+    responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][];
     userAddress: string;
 }
 
