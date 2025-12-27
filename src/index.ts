@@ -53,7 +53,7 @@ class PrimusCoreTLS {
     }
   }
 
-  async startAttestation(attRequest: AttRequest): Promise<any> {
+  async startAttestation(attRequest: AttRequest, timeout: number = 2 * 60 * 1000): Promise<any> {
     try {
       const signParams = attRequest.toJsonString()
       const signedAttRequest = await this.sign(signParams);
@@ -62,7 +62,7 @@ class PrimusCoreTLS {
       if (getAttestationRes.retcode !== "0") {
         return Promise.reject(new ZkAttestationError('00001'))
       }
-      const res: any = await getAttestationResult();
+      const res: any = await getAttestationResult(timeout);
       const { retcode, content, details } = res
       if (retcode === '0') {
         const { balanceGreaterThanBaseValue, signature, encodedData, extraData } = content

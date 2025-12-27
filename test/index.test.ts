@@ -120,7 +120,7 @@ describe('test', () => {
             // const startAttestationRes =
             // const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
             // await delay(800);
-            const attestation = await zkTLS.startAttestation(generateRequestParamsRes);
+            const attestation = await zkTLS.startAttestation(generateRequestParamsRes, 10 * 60 * 1000);
             console.log("attestation=", attestation);
             console.log("attestation.data=", attestation.data);
             const verifyAttestationRes = zkTLS.verifyAttestation(attestation)
