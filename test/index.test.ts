@@ -114,6 +114,9 @@ describe('test', () => {
             });
             generateRequestParamsRes.setNoProxy(false);
 
+            // Set the request interval to 1000 milliseconds (1 second)
+            // generateRequestParamsRes.setRequestInterval(1000);
+
             // console.log("-------------generateRequestParams result=", generateRequestParamsRes);
 
             // 3.

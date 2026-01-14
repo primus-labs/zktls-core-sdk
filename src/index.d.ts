@@ -51,6 +51,7 @@ export type FullAttestationParams = BaseAttestationParams & {
     additionParams?: string;
     sslCipher?: AttSslCipher;
     noProxy?: boolean;
+    requestInterval?: number;
   }
 
 export type SignedAttRequest = {

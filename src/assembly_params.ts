@@ -5,7 +5,7 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
     let { primusMpcUrl, primusProxyUrl, proxyUrl } = algorithmUrls
     let padoUrl = primusProxyUrl;
     let modelType = "proxytls";
-    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams, sslCipher, noProxy }, appSignature } = att
+    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams, sslCipher, noProxy, requestInterval }, appSignature } = att
     const requestUrl = Array.isArray(request) ? request[0].url : request.url;
     let host = new URL(requestUrl).host;
     const requestid = uuidv4();
@@ -45,6 +45,7 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
         templateId: "",
         padoExtensionVersion: "0.3.21",
         cipher: sslCipher,
+        requestIntervalMs: String(requestInterval),
     };
     return attestationParams;
 }
