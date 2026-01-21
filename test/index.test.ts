@@ -109,10 +109,10 @@ describe('test', () => {
             const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
 
             generateRequestParamsRes.setAttMode({
-                algorithmType: "proxytls",
+                algorithmType: "mpctls",
                 resultType: "plain"
             });
-            generateRequestParamsRes.setNoProxy(false);
+            // generateRequestParamsRes.setNoProxy(false);
 
             // Set the request interval to 1000 milliseconds (1 second)
             // generateRequestParamsRes.setRequestInterval(1000);
