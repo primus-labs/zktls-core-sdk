@@ -17,6 +17,7 @@ class PrimusCoreTLS {
   appId: string;
   appSecret?: string;
   algoUrls: AlgorithmUrls
+  private _isAttesting: boolean = false;
 
   constructor() {
     this.appId = '';
@@ -57,7 +58,126 @@ class PrimusCoreTLS {
     }
   }
 
+  private _validateAttestationParams(attRequest: AttRequest, timeout: number): void {
+    // Validate attRequest exists
+    if (!attRequest) {
+      throw new ZkAttestationError('00005', 'Missing attRequest parameter')
+    }
+
+    // Validate appId
+    if (!attRequest.appId || typeof attRequest.appId !== 'string' || attRequest.appId.trim() === '') {
+      throw new ZkAttestationError('00005', 'Missing or invalid appId')
+    }
+
+    // Validate userAddress
+    if (!attRequest.userAddress || typeof attRequest.userAddress !== 'string' || attRequest.userAddress.trim() === '') {
+      throw new ZkAttestationError('00005', 'Missing or invalid userAddress')
+    }
+
+    // Validate userAddress format (Ethereum address)
+    if (!ethers.utils.isAddress(attRequest.userAddress)) {
+      throw new ZkAttestationError('00005', 'Invalid userAddress format')
+    }
+
+    // Validate timeout
+    if (typeof timeout !== 'number' || !Number.isFinite(timeout) || timeout <= 0) {
+      throw new ZkAttestationError('00005', 'Invalid timeout parameter')
+    }
+
+    // Validate request if provided
+    if (attRequest.request !== undefined) {
+      const validateRequest = (req: AttNetworkRequest) => {
+        if (!req || typeof req !== 'object') {
+          throw new ZkAttestationError('00005', 'Invalid request object')
+        }
+        if (!req.url || typeof req.url !== 'string' || req.url.trim() === '') {
+          throw new ZkAttestationError('00005', 'Missing or invalid request.url')
+        }
+        if (!req.method || typeof req.method !== 'string' || req.method.trim() === '') {
+          throw new ZkAttestationError('00005', 'Missing or invalid request.method')
+        }
+      }
+
+      if (Array.isArray(attRequest.request)) {
+        if (attRequest.request.length === 0) {
+          throw new ZkAttestationError('00005', 'Request array cannot be empty')
+        }
+        attRequest.request.forEach((req, index) => {
+          try {
+            validateRequest(req)
+          } catch (error: any) {
+            throw new ZkAttestationError('00005', `Invalid request at index ${index}: ${error.message || error}`)
+          }
+        })
+      } else {
+        validateRequest(attRequest.request)
+      }
+    }
+
+    // Validate responseResolves if provided
+    if (attRequest.responseResolves !== undefined) {
+      const validateResponseResolve = (resolve: AttNetworkResponseResolve) => {
+        if (!resolve || typeof resolve !== 'object') {
+          throw new ZkAttestationError('00005', 'Invalid responseResolve object')
+        }
+        if (!resolve.keyName || typeof resolve.keyName !== 'string' || resolve.keyName.trim() === '') {
+          throw new ZkAttestationError('00005', 'Missing or invalid responseResolve.keyName')
+        }
+        if (!resolve.parsePath || typeof resolve.parsePath !== 'string' || resolve.parsePath.trim() === '') {
+          throw new ZkAttestationError('00005', 'Missing or invalid responseResolve.parsePath')
+        }
+      }
+
+      if (Array.isArray(attRequest.responseResolves)) {
+        if (attRequest.responseResolves.length === 0) {
+          throw new ZkAttestationError('00005', 'ResponseResolves array cannot be empty')
+        }
+        // Check if it's a nested array (AttNetworkResponseResolve[][])
+        const firstItem = attRequest.responseResolves[0]
+        if (Array.isArray(firstItem)) {
+          // Nested array case
+          (attRequest.responseResolves as AttNetworkResponseResolve[][]).forEach((resolveArray, arrayIndex) => {
+            if (!Array.isArray(resolveArray) || resolveArray.length === 0) {
+              throw new ZkAttestationError('00005', `ResponseResolves array at index ${arrayIndex} is invalid`)
+            }
+            resolveArray.forEach((resolve, resolveIndex) => {
+              try {
+                validateResponseResolve(resolve)
+              } catch (error: any) {
+                throw new ZkAttestationError('00005', `Invalid responseResolve at [${arrayIndex}][${resolveIndex}]: ${error.message || error}`)
+              }
+            })
+          })
+        } else {
+          // Flat array case (AttNetworkResponseResolve[])
+          (attRequest.responseResolves as AttNetworkResponseResolve[]).forEach((resolve, index) => {
+            try {
+              validateResponseResolve(resolve)
+            } catch (error: any) {
+              throw new ZkAttestationError('00005', `Invalid responseResolve at index ${index}: ${error.message || error}`)
+            }
+          })
+        }
+      }
+    }
+  }
+
   async startAttestation(attRequest: AttRequest, timeout: number = 2 * 60 * 1000): Promise<any> {
+    // Validate parameters
+    try {
+      this._validateAttestationParams(attRequest, timeout)
+    } catch (error: any) {
+      return Promise.reject(error)
+    }
+    // Check if there's already an attestation in progress
+    if (this._isAttesting) {
+      const errorCode = '00003';
+      return Promise.reject(new ZkAttestationError(errorCode))
+    }
+
+    // Set attestation flag
+    this._isAttesting = true;
+
     const eventReportBaseParams = {
       source: "",
       clientType: packageJson.name as ClientType,
@@ -147,6 +267,9 @@ class PrimusCoreTLS {
       } else {
         return Promise.reject(e)
       }
+    } finally {
+      // Always clear the attestation flag when done
+      this._isAttesting = false;
     }
   }
 
