@@ -22,7 +22,8 @@
     "pretest:integration": "npm run build && npm link",
     "publish": "npm publish --access public",
     "install": "node native/native-install.js",
-    "test": "jest --forceExit"
+    "test": "jest --forceExit",
+    "eventReport": "npm run build && node -r ts-node/register src/utils/eventReport.ts"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
@@ -45,7 +46,9 @@
     "transform": {
       "^.+\\.(ts|tsx)$": "ts-jest"
     },
-    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(ts|tsx|js)$",
+    "testMatch": [
+      "**/test/index.test.ts"
+    ],
     "moduleFileExtensions": [
       "ts",
       "tsx",
