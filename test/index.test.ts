@@ -70,71 +70,71 @@ describe('test', () => {
         
     });
 
-    // it('generateBatchRequestUrl', async () => {
-    //     console.log('--------------generateBatchRequestUrl-process.env', process.env.NODE_ENV)
-    //     try {
-    //         // 1.
-    //         const zkTLS = new PrimusCoreTLS();
-    //         const result = await zkTLS.init(appId, appSecret);
-    //         console.log("-------------init result=", result);
+    it('generateBatchRequestUrl', async () => {
+        console.log('--------------generateBatchRequestUrl-process.env', process.env.NODE_ENV)
+        try {
+            // 1.
+            const zkTLS = new PrimusCoreTLS();
+            const result = await zkTLS.init(appId, appSecret);
+            console.log("-------------init result=", result);
 
-    //         let request = [
-    //             {
-    //                 url: "https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USD",
-    //                 method: "GET",
-    //                 header: {},
-    //                 body: "",
-    //             },
-    //             {
-    //                 url: "https://www.okx.com/api/v5/public/time",
-    //                 method: "GET",
-    //                 header: {},
-    //                 body: "",
-    //             }
-    //         ];
+            let request = [
+                {
+                    url: "https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USD",
+                    method: "GET",
+                    header: {},
+                    body: "",
+                },
+                {
+                    url: "https://www.okx.com/api/v5/public/time",
+                    method: "GET",
+                    header: {},
+                    body: "",
+                }
+            ];
 
-    //         const responseResolves = [
-    //             [
-    //                 {
-    //                     keyName: "instType",
-    //                     parseType: "json",
-    //                     parsePath: "$.data[0].instType"
-    //                 }
-    //             ],
-    //             [
-    //                 {
-    //                     keyName: "time",
-    //                     parseType: "json",
-    //                     parsePath: "$.data[0].ts",
-    //                 }
-    //             ]
-    //         ];
-    //         const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
+            const responseResolves = [
+                [
+                    {
+                        keyName: "instType",
+                        parseType: "json",
+                        parsePath: "$.data[0].instType"
+                    }
+                ],
+                [
+                    {
+                        keyName: "time",
+                        parseType: "json",
+                        parsePath: "$.data[0].ts",
+                    }
+                ]
+            ];
+            const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
 
-    //         generateRequestParamsRes.setAttMode({
-    //             algorithmType: "mpctls",
-    //             resultType: "plain"
-    //         });
-    //         // generateRequestParamsRes.setNoProxy(false);
+            generateRequestParamsRes.setAttMode({
+                algorithmType: "mpctls",
+                resultType: "plain"
+            });
+            // generateRequestParamsRes.setNoProxy(false);
 
-    //         // Set the request interval to 1000 milliseconds (1 second)
-    //         // generateRequestParamsRes.setRequestInterval(1000);
+            // Set the request interval to 1000 milliseconds (1 second)
+            // generateRequestParamsRes.setRequestInterval(1000);
 
-    //         // console.log("-------------generateRequestParams result=", generateRequestParamsRes);
+            // console.log("-------------generateRequestParams result=", generateRequestParamsRes);
 
-    //         // 3.
-    //         // const startAttestationRes =
-    //         // const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    //         // await delay(800);
-    //         const attestation = await zkTLS.startAttestation(generateRequestParamsRes, 10 * 60 * 1000);
-    //         console.log("attestation=", attestation);
-    //         console.log("attestation.data=", attestation.data);
-    //         const verifyAttestationRes = zkTLS.verifyAttestation(attestation)
-    //         console.log("verifyAttestationRes=", verifyAttestationRes);
-    //     } catch (e) {
-    //         console.log('-----------generate error =', e);
-    //     }
+            // 3.
+            // const startAttestationRes =
+            // const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+            // await delay(800);
+            const attestation = await zkTLS.startAttestation(generateRequestParamsRes, 10 * 60 * 1000);
+            console.log("attestation=", attestation);
+            console.log("attestation.data=", attestation.data);
+            const verifyAttestationRes = zkTLS.verifyAttestation(attestation)
+            console.log("verifyAttestationRes=", verifyAttestationRes);
+        } catch (e) {
+            console.log('-----------generate error =', e);
+        }
 
-    // });
+    });
   
 });
