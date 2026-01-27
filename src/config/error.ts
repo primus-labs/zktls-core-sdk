@@ -7,7 +7,8 @@ export type AttestationErrorCode =
   "40001" | "40002" |
   "50002" | "50003" | "50004"  | "50005" | "50006" | "50007" | "50008"  | "50009"  | "50010" | "50011" |
   "99999" |
-  "-1200010"
+  "-1200010" |
+  '-1002001' | '-1002002' | '-1002003' | '-1002004' | '-1002005';
 
 
 export const ErrorCodeMAP = {
@@ -60,5 +61,8 @@ export const ErrorCodeMAP = {
   '-1200010':"Invalid message.",
   '-1002001':"Invalid App ID.",
   '-1002002':"Invalid App Secret.",
+  '-1002003':"Trial quota exhausted.",
+  '-1002004':"Subscription expired.",
+  '-1002005':"Quota exhausted.",
 }
 
