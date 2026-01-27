@@ -58,3 +58,10 @@ export type SignedAttRequest = {
     attRequest: FullAttestationParams,
     appSignature: string
 }
+
+export type ApiResponse<T = any> = {
+    rc: number;
+    mc: string;
+    msg: string;
+    result: T;
+}

@@ -47,6 +47,7 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
         cipher: sslCipher,
         requestIntervalMs: String(requestInterval),
     };
+    // console.log('attestationParams====', attestationParams.responses[0].conditions);
     return attestationParams;
 }
 
@@ -88,6 +89,7 @@ function assemblyResponse(responseResolves: AttNetworkResponseResolve[] | AttNet
     const groups = Array.isArray(responseResolves[0])
         ? responseResolves as AttNetworkResponseResolve[][]
         : [responseResolves as AttNetworkResponseResolve[]]
+// console.log('groups====', groups,responseResolves);
     return groups.map(group => {
         const subconditions = group.map(rR => {
             const { keyName, parsePath, op } = rR
@@ -96,7 +98,7 @@ function assemblyResponse(responseResolves: AttNetworkResponseResolve[] | AttNet
                 field: _getField(parsePath, op),
                 reveal_id: keyName,
                 op: _getOp(op),
-                type: _getType(op),
+                type: _getType(op)
             }
         })
 

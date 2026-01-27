@@ -8,7 +8,8 @@ import { init, getAttestation, getAttestationResult, AlgorithmBackend } from "./
 import { assemblyParams } from './assembly_params';
 import { ZkAttestationError } from './classes/Error'
 import { AttestationErrorCode } from 'config/error';
-import { eventReport, ClientType } from './utils/eventReport'
+import { eventReport } from './utils/eventReport'
+import { ClientType } from './api/index.d';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require('../package.json') as { name: string; version: string };
@@ -31,9 +32,70 @@ class PrimusCoreTLS {
     return await init(mode);
   }
 
+  private _validateRequest(request: AttNetworkRequest, index?: number): void {
+    if (!request || typeof request !== 'object') {
+      const errorMsg = index !== undefined 
+        ? `Invalid request object at index ${index}`
+        : 'Invalid request object';
+      throw new ZkAttestationError('00005', errorMsg);
+    }
+
+    // Validate URL
+    if (!request.url || typeof request.url !== 'string' || request.url.trim() === '') {
+      const errorMsg = index !== undefined
+        ? `Missing or invalid request.url at index ${index}`
+        : 'Missing or invalid request.url';
+      throw new ZkAttestationError('00005', errorMsg);
+    }
+
+    // Validate URL format
+    try {
+      new URL(request.url.trim());
+    } catch (e) {
+      const errorMsg = index !== undefined
+        ? `Invalid URL format at index ${index}: ${request.url}`
+        : `Invalid URL format: ${request.url}`;
+      throw new ZkAttestationError('00005', errorMsg);
+    }
+
+    // Validate method
+    if (!request.method || typeof request.method !== 'string' || request.method.trim() === '') {
+      const errorMsg = index !== undefined
+        ? `Missing or invalid request.method at index ${index}`
+        : 'Missing or invalid request.method';
+      throw new ZkAttestationError('00005', errorMsg);
+    }
+
+    // Validate HTTP method
+    const validMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS', 'CONNECT', 'TRACE'];
+    const methodUpper = request.method.trim().toUpperCase();
+    if (!validMethods.includes(methodUpper)) {
+      const errorMsg = index !== undefined
+        ? `Invalid HTTP method at index ${index}: ${request.method}. Valid methods are: ${validMethods.join(', ')}`
+        : `Invalid HTTP method: ${request.method}. Valid methods are: ${validMethods.join(', ')}`;
+      throw new ZkAttestationError('00005', errorMsg);
+    }
+  }
+
   generateRequestParams(request: AttNetworkRequest | AttNetworkRequest[],
     responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][],
     userAddress?: string): AttRequest {
+    // Validate request parameter
+    if (request === undefined || request === null) {
+      throw new ZkAttestationError('00005', 'Missing request parameter');
+    }
+
+    if (Array.isArray(request)) {
+      if (request.length === 0) {
+        throw new ZkAttestationError('00005', 'Request array cannot be empty');
+      }
+      request.forEach((req, index) => {
+        this._validateRequest(req, index);
+      });
+    } else {
+      this._validateRequest(request);
+    }
+
     const userAddr = userAddress ? userAddress : "0x0000000000000000000000000000000000000000";
     return new AttRequest({
       appId: this.appId,
@@ -86,31 +148,23 @@ class PrimusCoreTLS {
 
     // Validate request if provided
     if (attRequest.request !== undefined) {
-      const validateRequest = (req: AttNetworkRequest) => {
-        if (!req || typeof req !== 'object') {
-          throw new ZkAttestationError('00005', 'Invalid request object')
-        }
-        if (!req.url || typeof req.url !== 'string' || req.url.trim() === '') {
-          throw new ZkAttestationError('00005', 'Missing or invalid request.url')
-        }
-        if (!req.method || typeof req.method !== 'string' || req.method.trim() === '') {
-          throw new ZkAttestationError('00005', 'Missing or invalid request.method')
-        }
-      }
-
       if (Array.isArray(attRequest.request)) {
         if (attRequest.request.length === 0) {
           throw new ZkAttestationError('00005', 'Request array cannot be empty')
         }
         attRequest.request.forEach((req, index) => {
           try {
-            validateRequest(req)
+            this._validateRequest(req, index)
           } catch (error: any) {
             throw new ZkAttestationError('00005', `Invalid request at index ${index}: ${error.message || error}`)
           }
         })
       } else {
-        validateRequest(attRequest.request)
+        try {
+          this._validateRequest(attRequest.request)
+        } catch (error: any) {
+          throw new ZkAttestationError('00005', `Invalid request: ${error.message || error}`)
+        }
       }
     }
 
@@ -188,7 +242,9 @@ class PrimusCoreTLS {
     }
     try {
       const signParams = attRequest.toJsonString()
+      console.log('signParams====', signParams);
       const signedAttRequest = await this.sign(signParams);
+      console.log('signedAttRequest====', signedAttRequest);
       const attParams = assemblyParams(signedAttRequest, this.algoUrls);
       const getAttestationRes = await getAttestation(attParams);
       
