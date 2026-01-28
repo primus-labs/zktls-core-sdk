@@ -53,6 +53,7 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
         cipher: sslCipher,
         requestIntervalMs: String(requestInterval),
     };
+    // console.log('attestationParams====', attestationParams.responses[0].conditions);
     return attestationParams;
 }
 
