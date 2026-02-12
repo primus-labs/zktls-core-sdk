@@ -47,7 +47,7 @@
       "^.+\\.(ts|tsx)$": "ts-jest"
     },
     "testMatch": [
-      "**/test/index.test.ts"
+      "**/test/**/*.test.ts"
     ],
     "moduleFileExtensions": [
       "ts",
