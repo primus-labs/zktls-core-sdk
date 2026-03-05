@@ -5,3 +5,8 @@
 *-key.json
 package-lock.json
 build
+
+# Environment variables (contains app credentials, do not commit)
+.env
+.env.local
+.env.*.local

@@ -2,14 +2,13 @@ import { PrimusCoreTLS} from '../src/index';
 
 describe('test', () => {
     jest.setTimeout(100000);
-    // production
-    const appId = "0xe319e567f70e2b2a153cb6ceaa73893648cde180";
-    const appSecret = "0x4348563b2178adc171d851bcc27054d7879e07a41263ccfaa3b00d63d056559a";
-
+    const appId = process.env.ZKTLS_APP_ID;
+    const appSecret = process.env.ZKTLS_APP_SECRET;
+    if (!appId || !appSecret) {
+        throw new Error('ZKTLS_APP_ID and ZKTLS_APP_SECRET must be set in .env');
+    }
     it('generate', async () => {
-        console.log('--------------process.env', process.env.NODE_ENV)
         try {
-            // 1.
             const zkTLS = new PrimusCoreTLS();
             const result = await zkTLS.init(appId, appSecret);
             console.log("-------------init result=", result);
