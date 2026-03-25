@@ -121,7 +121,11 @@ class PrimusCoreTLS {
     }
   }
 
-  private _validateAttestationParams(attRequest: AttRequest, timeout: number): void {
+  private _validateAttestationParams(
+    attRequest: AttRequest,
+    timeout: number,
+    algoUrls?: unknown
+  ): void {
     // Validate attRequest exists
     if (!attRequest) {
       throw new ZkAttestationError('00005', 'Missing attRequest parameter')
@@ -145,6 +149,16 @@ class PrimusCoreTLS {
     // Validate timeout
     if (typeof timeout !== 'number' || !Number.isFinite(timeout) || timeout <= 0) {
       throw new ZkAttestationError('00005', 'Invalid timeout parameter')
+    }
+
+    // Validate algoUrls when provided (same shape as AlgorithmUrls: three non-empty parseable URLs)
+    if (algoUrls !== undefined && algoUrls !== null) {
+      if (!this._isValidAlgoUrlsLike(algoUrls)) {
+        throw new ZkAttestationError(
+          '00005',
+          'Invalid algoUrls: primusMpcUrl, primusProxyUrl, and proxyUrl must be non-empty strings and valid URLs'
+        )
+      }
     }
 
     // Validate request if provided
@@ -217,13 +231,47 @@ class PrimusCoreTLS {
     }
   }
 
-  async startAttestation(attRequest: AttRequest, timeout: number = 2 * 60 * 1000): Promise<any> {
-    // Validate parameters
+  /** Same shape as {@link AlgorithmUrls}: primusMpcUrl, primusProxyUrl, proxyUrl (non-empty, parseable URLs). */
+  private _isValidAlgoUrlsLike(
+    value: unknown
+  ): value is Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'> {
+    if (value === null || typeof value !== 'object') {
+      return false
+    }
+    const o = value as Record<string, unknown>
+    for (const key of ['primusMpcUrl', 'primusProxyUrl', 'proxyUrl'] as const) {
+      const s = o[key]
+      if (typeof s !== 'string' || s.trim() === '') {
+        return false
+      }
+      try {
+        new URL(s.trim())
+      } catch {
+        return false
+      }
+    }
+    return true
+  }
+
+  /** Caller must pass `algoUrls` through {@link _validateAttestationParams} first when provided. */
+  private _resolveAlgoUrlsOverride(algoUrlsOverride?: unknown): AlgorithmUrls {
+    if (algoUrlsOverride === undefined || algoUrlsOverride === null) {
+      return this.algoUrls
+    }
+    return algoUrlsOverride as AlgorithmUrls
+  }
+
+  async startAttestation(
+    attRequest: AttRequest,
+    timeout: number = 2 * 60 * 1000,
+    algoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
+  ): Promise<any> {
     try {
-      this._validateAttestationParams(attRequest, timeout)
+      this._validateAttestationParams(attRequest, timeout, algoUrls)
     } catch (error: any) {
       return Promise.reject(error)
     }
+    const effectiveAlgoUrls = this._resolveAlgoUrlsOverride(algoUrls)
     // Check if there's already an attestation in progress
     if (this._isAttesting) {
       const errorCode = '00003';
@@ -251,7 +299,7 @@ class PrimusCoreTLS {
       console.log('signParams====', signParams);
       const signedAttRequest = await this.sign(signParams);
       console.log('signedAttRequest====', signedAttRequest);
-      const attParams = assemblyParams(signedAttRequest, this.algoUrls);
+      const attParams = assemblyParams(signedAttRequest, effectiveAlgoUrls);
       const getAttestationRes = await getAttestation(attParams);
       
       if (getAttestationRes.retcode !== "0") {
