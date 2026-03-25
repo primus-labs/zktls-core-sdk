@@ -1,0 +1,24 @@
+{
+  "runStartedAt": "2026-03-25T03:33:32.836Z",
+  "runStamp": "2026-03-25T11-33-32-836",
+  "partial": true,
+  "progressSnapshotAt": "2026-03-25T03:33:42.052Z",
+  "completedRounds": 0,
+  "totalProofs": 1,
+  "totalSuccess": 1,
+  "totalFail": 0,
+  "successRatePct": 100,
+  "avgProofDurationMs": 4068,
+  "failByCode": {},
+  "lastResults": [
+    {
+      "t": "2026-03-25T03:33:32.982Z",
+      "round": 0,
+      "presetIndex": 0,
+      "presetName": "listdao_okx",
+      "status": "success",
+      "durationMs": 4068
+    }
+  ],
+  "attestationsCount": 1
+}

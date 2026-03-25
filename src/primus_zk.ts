@@ -71,7 +71,7 @@ let callAlgorithm = null;
 export const init = async (mode: AlgorithmBackend = 'auto') => {
   callAlgorithm = await initAlgorithm(mode);
 
-  const logParams = buildAlgorithmParams('setLogLevel', { logLevel: 'error' });
+  const logParams = buildAlgorithmParams('setLogLevel', { logLevel: 'info' });
   const logResult = await callAlgorithm(logParams);
 
   const params = buildAlgorithmParams('init', {});

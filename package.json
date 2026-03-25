@@ -23,7 +23,9 @@
     "publish": "npm publish --access public",
     "install": "node native/native-install.js",
     "test": "jest --forceExit",
-    "eventReport": "npm run build && node -r ts-node/register src/utils/eventReport.ts"
+    "eventReport": "npm run build && node -r ts-node/register src/utils/eventReport.ts",
+    "soak": "npm run build && ts-node --project test/local/tsconfig.scripts.json test/local/soak/soak-proofs.ts",
+    "soak:dev": "ts-node --project test/local/tsconfig.scripts.json test/local/soak/soak-proofs.ts"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
@@ -48,6 +50,9 @@
     "transform": {
       "^.+\\.(ts|tsx)$": "ts-jest"
     },
+    "testPathIgnorePatterns": [
+      "<rootDir>/test/local/"
+    ],
     "testMatch": [
       "**/test/**/*.test.ts"
     ],

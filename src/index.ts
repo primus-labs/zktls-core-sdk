@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { PADOADDRESS } from './config/constants'
+import { PADOADDRESS } from './config/env'
 import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, Attestation } from './index.d'
 import { AttRequest } from './classes/AttRequest'
 import { AlgorithmUrls } from "./classes/AlgorithmUrls";

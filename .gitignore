@@ -10,3 +10,5 @@ build
 .env
 .env.local
 .env.*.local
+
+# Local-only tooling (soak scripts, personal experiments — not tracked)
