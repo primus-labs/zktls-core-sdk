@@ -107,7 +107,15 @@ describe('test', () => {
                     }
                 ]
             ];
+
+            
             const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
+
+            // const attConditions = [
+            //     [{ field: 'instType', op: 'STREQ', value: 'SPOT' }],
+            //     [{ field: 'time', op: 'STRNEQ', value: '1716835200' }],
+            //   ];
+            // generateRequestParamsRes.setAttConditions(attConditions);
 
             generateRequestParamsRes.setAttMode({
                 algorithmType: "proxytls",
