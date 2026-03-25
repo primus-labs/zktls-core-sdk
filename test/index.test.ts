@@ -110,7 +110,7 @@ describe('test', () => {
             const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
 
             generateRequestParamsRes.setAttMode({
-                algorithmType: "mpctls",
+                algorithmType: "proxytls",
                 resultType: "plain"
             });
             // generateRequestParamsRes.setNoProxy(false);
