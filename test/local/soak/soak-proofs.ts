@@ -241,12 +241,6 @@ async function runOneProof(
   if (preset.noProxy !== undefined) {
     attReq.setNoProxy(preset.noProxy);
   }
-  if (preset.additionParams !== undefined && preset.additionParams !== '') {
-    attReq.setAdditionParams(preset.additionParams);
-  }
-  if (preset.attConditions !== undefined) {
-    attReq.setAttConditions(preset.attConditions);
-  }
 
   const attestation = (await zk.startAttestation(attReq, timeoutMs)) as Attestation;
   const attJson = toJsonSafe(attestation);
