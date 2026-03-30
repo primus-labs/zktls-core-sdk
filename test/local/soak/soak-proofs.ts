@@ -51,12 +51,18 @@ const DEFAULT_PROGRESS_PATH = 'test/local/soak/summary/soak-progress.json';
 const CALL_ALGORITHM_OUTPUT_MARKER = 'callAlgorithm output:';
 
 /** Only `retcode` **2** is persisted to `callAlgorithm-output-*.jsonl` (and optional raw line). */
-function normalizeCallAlgorithmRetcode2(rc: unknown): '2' | null {
+function normalizeCallAlgorithmRetcode2(rc: unknown): '2' | '1' | null {
   if (rc === 2) {
     return '2';
   }
   if (typeof rc === 'string' && rc.trim() === '2') {
     return '2';
+  }
+  if (rc === 1) {
+    return '1';
+  }
+  if (typeof rc === 'string' && rc.trim() === '1') {
+    return '1';
   }
   return null;
 }
@@ -326,9 +332,21 @@ function createCallAlgorithmLineSink(opts: {
     if (!jsonStr) {
       return;
     }
-    let obj: Record<string, unknown>;
+    type Resp = {
+      retcode?: string | null;
+      retdesc?: string | null;
+      details?: {
+        errlog?: {
+          code?: string | null;
+        } | null;
+        initialization?:{}|null;
+        offline?:{}|null;
+        online?:{}|null;
+      } | null;
+    };
+    let obj: Resp;
     try {
-      obj = JSON.parse(jsonStr) as Record<string, unknown>;
+      obj = JSON.parse(jsonStr) as Resp;
     } catch {
       return;
     }
@@ -336,6 +354,10 @@ function createCallAlgorithmLineSink(opts: {
     const retcode2 = normalizeCallAlgorithmRetcode2(obj.retcode);
     if (!retcode2) {
       return;
+    }
+    
+    if ( retcode2=='1' && !(obj.retdesc !=="" ||  (obj.details?.errlog?.code ?? "0") !== "0")){
+        return;
     }
 
     const tag = opts.getFileTag().trim().replace(/[^a-z0-9_-]/gi, '_');
@@ -359,10 +381,11 @@ function createCallAlgorithmLineSink(opts: {
       }
     }
 
-    const record: { retcode: string; retdesc: string; details: unknown } = {
+    const record: { retcode: string; retdesc: string; details: unknown; ts: number} = {
       retcode: retcode2,
       retdesc: obj.retdesc == null ? '' : String(obj.retdesc),
       details: obj.details ?? null,
+      ts: Date.now(),
     };
     try {
       const file = path.join(resolvedDir, jsonlBase);
