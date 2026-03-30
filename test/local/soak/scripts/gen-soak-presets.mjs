@@ -1,5 +1,5 @@
 /**
- * Regenerates test/local/soak/soak-presets.ts from test/local/soak/listdao/<source>/params.json
+ * Regenerates soak-presets.ts: test/local/listdao, soak/listdao, soak/listadao, then soak/<source>/.
  * Run: node test/local/soak/scripts/gen-soak-presets.mjs
  */
 import fs from 'fs';
@@ -8,8 +8,33 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SOAK_DIR = path.resolve(__dirname, '..');
+/** test/local/listdao (optional), then test/local/soak/listdao or soak/listadao */
+const LOCAL_LISTDAO = path.resolve(SOAK_DIR, '..', 'listdao');
 const LISTDAO = path.join(SOAK_DIR, 'listdao');
+const LISTADAO = path.join(SOAK_DIR, 'listadao');
 const OUT = path.join(SOAK_DIR, 'soak-presets.ts');
+
+/** Local listdao first, then soak/listdao, soak/listadao, then soak/<source>/ */
+function resolveParamsJson(sourceDir) {
+  const candidates = [
+    path.join(LOCAL_LISTDAO, sourceDir, 'params.json'),
+    path.join(LOCAL_LISTDAO, sourceDir, 'param.json'),
+    path.join(LISTDAO, sourceDir, 'params.json'),
+    path.join(LISTDAO, sourceDir, 'param.json'),
+    path.join(LISTADAO, sourceDir, 'params.json'),
+    path.join(LISTADAO, sourceDir, 'param.json'),
+    path.join(SOAK_DIR, sourceDir, 'params.json'),
+    path.join(SOAK_DIR, sourceDir, 'param.json'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+  throw new Error(
+    `[gen-soak-presets] Missing params for "${sourceDir}". Tried:\n  ${candidates.join('\n  ')}`
+  );
+}
 
 function collectReveals(cond, out) {
   if (!cond || typeof cond !== 'object') return;
@@ -55,12 +80,20 @@ function paramsToPreset(j, presetVar) {
       ? { algorithmType: 'mpctls', resultType: 'plain' }
       : { algorithmType: 'proxytls', resultType: 'plain' };
   let noProxy;
+  let attConditions;
   try {
     const ap = JSON.parse(j.appParameters?.appSignParameters || '{}');
     if (ap.noProxy === true) noProxy = true;
+    if (ap.attConditions != null && typeof ap.attConditions === 'object') {
+      attConditions = ap.attConditions;
+    }
   } catch {
     /* ignore */
   }
+  const additionParams =
+    typeof j.appParameters?.additionParams === 'string' && j.appParameters.additionParams !== ''
+      ? j.appParameters.additionParams
+      : undefined;
 
   let ts = `const ${presetVar}: SoakPreset = {\n  name: ${escapeStr(name)},\n  requests: [\n`;
   for (const req of requests) {
@@ -76,13 +109,15 @@ function paramsToPreset(j, presetVar) {
   }
   ts += `  ],\n  attMode: { algorithmType: ${escapeStr(attMode.algorithmType)}, resultType: ${escapeStr(attMode.resultType)} }`;
   if (noProxy) ts += `,\n  noProxy: true`;
+  if (additionParams !== undefined) ts += `,\n  additionParams: ${escapeStr(additionParams)}`;
+  if (attConditions !== undefined) ts += `,\n  attConditions: ${JSON.stringify(attConditions)}`;
   ts += `,\n};`;
   return ts;
 }
 
 const header =
   '/**\n' +
-  ' * Soak presets from test/local/soak/listdao/<source>/params.json\n' +
+  ' * Params: test/local/listdao → soak/listdao → soak/listadao/<source>/ (params.json or param.json).\n' +
   ' * presetGithub, presetSteam, presetBinance, presetAmazon, presetOkx.\n' +
   ' * Regenerate: node test/local/soak/scripts/gen-soak-presets.mjs\n' +
   ' */\n' +
@@ -93,6 +128,10 @@ const header =
   '  responseResolves: AttNetworkResponseResolve[][];\n' +
   '  attMode: AttMode;\n' +
   '  noProxy?: boolean;\n' +
+  '  /** From listdao appParameters.additionParams */\n' +
+  '  additionParams?: string;\n' +
+  '  /** From listdao appSignParameters attConditions */\n' +
+  '  attConditions?: object;\n' +
   '};\n\n';
 
 /** [listdao folder, exported const name] */
@@ -106,10 +145,22 @@ const MAP = [
 
 let out = header;
 for (const [dir, pv] of MAP) {
-  const j = JSON.parse(fs.readFileSync(path.join(LISTDAO, dir, 'params.json'), 'utf8'));
+  const paramsPath = resolveParamsJson(dir);
+  const j = JSON.parse(fs.readFileSync(paramsPath, 'utf8'));
   out += paramsToPreset(j, pv) + '\n\n';
 }
 out +=
+  "export const SOAK_PRESET_SOURCES = ['github', 'steam', 'binance', 'amazon', 'okx'] as const;\n" +
+  'export type SoakPresetSource = (typeof SOAK_PRESET_SOURCES)[number];\n\n' +
+  '/** Pick one preset for `npm run soak:<source>` (see `soak-proofs.ts` argv). */\n' +
+  'export const SOAK_PRESET_BY_SOURCE: Record<SoakPresetSource, SoakPreset> = {\n' +
+  '  github: presetGithub,\n' +
+  '  steam: presetSteam,\n' +
+  '  binance: presetBinance,\n' +
+  '  amazon: presetAmazon,\n' +
+  '  okx: presetOkx,\n' +
+  '};\n\n' +
+  '/** Default `npm run soak`: all sources in order. */\n' +
   'export const SOAK_PRESETS: readonly SoakPreset[] = [\n' +
   '  presetGithub,\n' +
   '  presetSteam,\n' +

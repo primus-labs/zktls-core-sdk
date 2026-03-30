@@ -1,5 +1,17 @@
-// const pEnv = 'production'
-const pEnv = 'test'
+type PrimusEnv = 'production' | 'test'
+
+function resolvePrimusEnv(): PrimusEnv {
+  const raw =
+    typeof process !== 'undefined' && process.env ? process.env.PRIMUS_SDK_ENV : undefined
+  const v = (raw ?? '').trim().toLowerCase()
+  if (v === 'production' || v === 'prod') {
+    return 'production'
+  }
+  // Default test (api-dev). Use PRIMUS_SDK_ENV=production when dev DNS is unreachable.
+  return 'test'
+}
+
+const pEnv = resolvePrimusEnv()
 const pEnvMap = {
   production: {
     PRIMUS_PROXY_URL: 'wss://api2.padolabs.org/algorithm-proxy',

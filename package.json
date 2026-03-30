@@ -24,8 +24,19 @@
     "install": "node native/native-install.js",
     "test": "jest --forceExit",
     "eventReport": "npm run build && node -r ts-node/register src/utils/eventReport.ts",
-    "soak": "npm run build && ts-node --project test/local/tsconfig.scripts.json test/local/soak/soak-proofs.ts",
-    "soak:dev": "ts-node --project test/local/tsconfig.scripts.json test/local/soak/soak-proofs.ts"
+    "soak": "npm run build && ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts",
+    "soak:dev": "ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts",
+    "soak:github": "npm run build && ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts github",
+    "soak:dev:github": "ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts github",
+    "soak:steam": "npm run build && ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts steam",
+    "soak:dev:steam": "ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts steam",
+    "soak:binance": "npm run build && ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts binance",
+    "soak:dev:binance": "ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts binance",
+    "soak:amazon": "npm run build && ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts amazon",
+    "soak:dev:amazon": "ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts amazon",
+    "soak:okx": "npm run build && ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts okx",
+    "soak:dev:okx": "ts-node --project test/local/tsconfig.scripts.json -r ./test/local/soak/register-primus-test-env.cjs test/local/soak/soak-proofs.ts okx",
+    "soak:aggregate-summary": "node test/local/soak/scripts/aggregate-soak-summary.mjs"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
