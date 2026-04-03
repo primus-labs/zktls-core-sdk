@@ -304,7 +304,7 @@ class PrimusCoreTLS {
       
       if (getAttestationRes.retcode !== "0") {
         const errorCode = getAttestationRes.retcode === '2' ? '00001' : '00000';
-        await eventReport({
+        void eventReport({
           ...eventReportBaseParams,
           status: "FAILED",
           detail: {
@@ -319,7 +319,7 @@ class PrimusCoreTLS {
       if (retcode === '0') {
         const { balanceGreaterThanBaseValue, signature, encodedData, extraData } = content
         if (balanceGreaterThanBaseValue === 'true' && signature) {
-          await eventReport({
+          void eventReport({
             ...eventReportBaseParams,
             status: "SUCCESS",
           })
@@ -337,7 +337,7 @@ class PrimusCoreTLS {
           } else {
             errorCode = '00104';
           }
-          await eventReport({
+          void eventReport({
             ...eventReportBaseParams,
             status: "FAILED",
             detail: {
@@ -345,12 +345,12 @@ class PrimusCoreTLS {
               desc: ""
             },
           })
-         
+
           return Promise.reject(new ZkAttestationError(errorCode as AttestationErrorCode, '', res))
         }
       } else if (retcode === '2') {
         const { errlog: { code } } = details;
-        await eventReport({
+        void eventReport({
           ...eventReportBaseParams,
           status: "FAILED",
           detail: {
@@ -362,7 +362,7 @@ class PrimusCoreTLS {
       }
     } catch (e: any) {
       if (e?.code === 'timeout') {
-        await eventReport({
+        void eventReport({
           ...eventReportBaseParams,
           status: "FAILED",
           detail: {
