@@ -8,7 +8,7 @@ import { init, getAttestation, getAttestationResult, AlgorithmBackend } from "./
 import { assemblyParams } from './assembly_params';
 import { ZkAttestationError } from './classes/Error'
 import { AttestationErrorCode } from 'config/error';
-import { getAppQuote } from './api';
+// import { getAppQuote } from './api';
 import { eventReport } from './utils/eventReport'
 import { ClientType } from './api/index.d';
 
@@ -121,7 +121,11 @@ class PrimusCoreTLS {
     }
   }
 
-  private _validateAttestationParams(attRequest: AttRequest, timeout: number): void {
+  private _validateAttestationParams(
+    attRequest: AttRequest,
+    timeout: number,
+    algoUrls?: unknown
+  ): void {
     // Validate attRequest exists
     if (!attRequest) {
       throw new ZkAttestationError('00005', 'Missing attRequest parameter')
@@ -145,6 +149,16 @@ class PrimusCoreTLS {
     // Validate timeout
     if (typeof timeout !== 'number' || !Number.isFinite(timeout) || timeout <= 0) {
       throw new ZkAttestationError('00005', 'Invalid timeout parameter')
+    }
+
+    // Validate algoUrls when provided (same shape as AlgorithmUrls: three non-empty parseable URLs)
+    if (algoUrls !== undefined && algoUrls !== null) {
+      if (!this._isValidAlgoUrlsLike(algoUrls)) {
+        throw new ZkAttestationError(
+          '00005',
+          'Invalid algoUrls: primusMpcUrl, primusProxyUrl, and proxyUrl must be non-empty strings and valid URLs'
+        )
+      }
     }
 
     // Validate request if provided
@@ -217,13 +231,47 @@ class PrimusCoreTLS {
     }
   }
 
-  async startAttestation(attRequest: AttRequest, timeout: number = 2 * 60 * 1000): Promise<any> {
-    // Validate parameters
+  /** Same shape as {@link AlgorithmUrls}: primusMpcUrl, primusProxyUrl, proxyUrl (non-empty, parseable URLs). */
+  private _isValidAlgoUrlsLike(
+    value: unknown
+  ): value is Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'> {
+    if (value === null || typeof value !== 'object') {
+      return false
+    }
+    const o = value as Record<string, unknown>
+    for (const key of ['primusMpcUrl', 'primusProxyUrl', 'proxyUrl'] as const) {
+      const s = o[key]
+      if (typeof s !== 'string' || s.trim() === '') {
+        return false
+      }
+      try {
+        new URL(s.trim())
+      } catch {
+        return false
+      }
+    }
+    return true
+  }
+
+  /** Caller must pass `algoUrls` through {@link _validateAttestationParams} first when provided. */
+  private _resolveAlgoUrlsOverride(algoUrlsOverride?: unknown): AlgorithmUrls {
+    if (algoUrlsOverride === undefined || algoUrlsOverride === null) {
+      return this.algoUrls
+    }
+    return algoUrlsOverride as AlgorithmUrls
+  }
+
+  async startAttestation(
+    attRequest: AttRequest,
+    timeout: number = 2 * 60 * 1000,
+    algoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
+  ): Promise<any> {
     try {
-      this._validateAttestationParams(attRequest, timeout)
+      this._validateAttestationParams(attRequest, timeout, algoUrls)
     } catch (error: any) {
       return Promise.reject(error)
     }
+    const effectiveAlgoUrls = this._resolveAlgoUrlsOverride(algoUrls)
     // Check if there's already an attestation in progress
     if (this._isAttesting) {
       const errorCode = '00003';
@@ -245,18 +293,18 @@ class PrimusCoreTLS {
       // Check app quote before starting attestation
       // Only business logic errors (ZkAttestationError) will be thrown
       // Network errors will be caught and logged, but won't stop execution
-      await this._checkAppQuote();
+      // await this._checkAppQuote();
 
       const signParams = attRequest.toJsonString()
       console.log('signParams====', signParams);
       const signedAttRequest = await this.sign(signParams);
       console.log('signedAttRequest====', signedAttRequest);
-      const attParams = assemblyParams(signedAttRequest, this.algoUrls);
+      const attParams = assemblyParams(signedAttRequest, effectiveAlgoUrls);
       const getAttestationRes = await getAttestation(attParams);
       
       if (getAttestationRes.retcode !== "0") {
         const errorCode = getAttestationRes.retcode === '2' ? '00001' : '00000';
-        await eventReport({
+        void eventReport({
           ...eventReportBaseParams,
           status: "FAILED",
           detail: {
@@ -271,7 +319,7 @@ class PrimusCoreTLS {
       if (retcode === '0') {
         const { balanceGreaterThanBaseValue, signature, encodedData, extraData } = content
         if (balanceGreaterThanBaseValue === 'true' && signature) {
-          await eventReport({
+          void eventReport({
             ...eventReportBaseParams,
             status: "SUCCESS",
           })
@@ -289,7 +337,7 @@ class PrimusCoreTLS {
           } else {
             errorCode = '00104';
           }
-          await eventReport({
+          void eventReport({
             ...eventReportBaseParams,
             status: "FAILED",
             detail: {
@@ -297,12 +345,12 @@ class PrimusCoreTLS {
               desc: ""
             },
           })
-         
+
           return Promise.reject(new ZkAttestationError(errorCode as AttestationErrorCode, '', res))
         }
       } else if (retcode === '2') {
         const { errlog: { code } } = details;
-        await eventReport({
+        void eventReport({
           ...eventReportBaseParams,
           status: "FAILED",
           detail: {
@@ -314,7 +362,7 @@ class PrimusCoreTLS {
       }
     } catch (e: any) {
       if (e?.code === 'timeout') {
-        await eventReport({
+        void eventReport({
           ...eventReportBaseParams,
           status: "FAILED",
           detail: {
@@ -343,53 +391,53 @@ class PrimusCoreTLS {
     return verifyResult
   }
 
-  /**
-   * Check app quote and perform business logic based on the result
-   * @private
-   * @throws {ZkAttestationError} Only throws business logic errors, network errors are caught and ignored
-   */
-  private async _checkAppQuote(): Promise<void> {
-    try {
-      const {rc, result} = await getAppQuote({ appId: this.appId });
-      // console.log('_checkAppQuote', result)
-      // Business logic based on quote result
-      if (rc !== 0) {
-        // Handle error case - you can customize this based on your requirements
-        console.warn('App quote check failed:', result?.msg);
-        // Optionally throw error or handle differently based on business requirements
-        // throw new ZkAttestationError('00005', result?.msg || 'App quote check failed');
-      }
-      if (!result ) { 
-        throw new ZkAttestationError('-1002001');
-      }
-      if (!result.expiryTime && (!result.remainingQuota  || result.remainingQuota <= 0 ) ) {
-        throw new ZkAttestationError('-1002003');
-      }
-      if (result.expiryTime ) {
-        if (result.expiryTime < Date.now()) {
-          throw new ZkAttestationError('-1002004');
-        }
-        if (!result.remainingQuota || result.remainingQuota <= 0) {
-          throw new ZkAttestationError('-1002005');
-        }
-      }
+  // /**
+  //  * Check app quote and perform business logic based on the result
+  //  * @private
+  //  * @throws {ZkAttestationError} Only throws business logic errors, network errors are caught and ignored
+  //  */
+  // private async _checkAppQuote(): Promise<void> {
+  //   try {
+  //     const {rc, result} = await getAppQuote({ appId: this.appId });
+  //     // console.log('_checkAppQuote', result)
+  //     // Business logic based on quote result
+  //     if (rc !== 0) {
+  //       // Handle error case - you can customize this based on your requirements
+  //       console.warn('App quote check failed:', result?.msg);
+  //       // Optionally throw error or handle differently based on business requirements
+  //       // throw new ZkAttestationError('00005', result?.msg || 'App quote check failed');
+  //     }
+  //     if (!result ) { 
+  //       throw new ZkAttestationError('-1002001');
+  //     }
+  //     if (!result.expiryTime && (!result.remainingQuota  || result.remainingQuota <= 0 ) ) {
+  //       throw new ZkAttestationError('-1002003');
+  //     }
+  //     if (result.expiryTime ) {
+  //       if (result.expiryTime < Date.now()) {
+  //         throw new ZkAttestationError('-1002004');
+  //       }
+  //       if (!result.remainingQuota || result.remainingQuota <= 0) {
+  //         throw new ZkAttestationError('-1002005');
+  //       }
+  //     }
       
-      // Add other business logic based on quoteResult.result if needed
-      // For example:
-      // if (quoteResult.result?.quotaExceeded) {
-      //   throw new ZkAttestationError('00005', 'Quota exceeded');
-      // }
-    } catch (error: any) {
-      // If it's a business logic error (ZkAttestationError), rethrow it
-      if (error instanceof ZkAttestationError) {
-        throw error;
-      }
-      // For network errors or other exceptions, catch and log but don't throw
-      // This allows the execution to continue even if the quote check fails
-      console.error('Failed to check app quote (network error or other exception):', error);
-      // Don't throw - allow execution to continue
-    }
-  }
+  //     // Add other business logic based on quoteResult.result if needed
+  //     // For example:
+  //     // if (quoteResult.result?.quotaExceeded) {
+  //     //   throw new ZkAttestationError('00005', 'Quota exceeded');
+  //     // }
+  //   } catch (error: any) {
+  //     // If it's a business logic error (ZkAttestationError), rethrow it
+  //     if (error instanceof ZkAttestationError) {
+  //       throw error;
+  //     }
+  //     // For network errors or other exceptions, catch and log but don't throw
+  //     // This allows the execution to continue even if the quote check fails
+  //     console.error('Failed to check app quote (network error or other exception):', error);
+  //     // Don't throw - allow execution to continue
+  //   }
+  // }
 }
 
 export { PrimusCoreTLS, Attestation };

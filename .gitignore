@@ -11,4 +11,5 @@ build
 .env.local
 .env.*.local
 
-# Local-only tooling (soak scripts, personal experiments — not tracked)
+
+sync-client-plugin.sh

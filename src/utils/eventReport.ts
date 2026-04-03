@@ -1,16 +1,12 @@
 import { reportEvent } from '../api';
 import type { EventReportRawData } from '../api/index.d';
 
-
-async function eventReport(rawDataObj: EventReportRawData) {
-  try {
-    await reportEvent(rawDataObj);
-  } catch (error: any) {
-    console.error('event report failed:', error);
-  }
+/** Never rejects — failures must not affect attestation flow. */
+function eventReport(rawDataObj: EventReportRawData): Promise<void> {
+  return Promise.resolve()
+    .then(() => reportEvent(rawDataObj))
+    .then(() => undefined)
+    .catch(() => undefined);
 }
 
-
-export {
-  eventReport
-};
+export { eventReport };
