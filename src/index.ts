@@ -20,6 +20,7 @@ class PrimusCoreTLS {
   appSecret?: string;
   algoUrls: AlgorithmUrls
   private _isAttesting: boolean = false;
+  private _allPrivateData: Record<string, string> = {};
 
   constructor() {
     this.appId = '';
@@ -300,6 +301,7 @@ class PrimusCoreTLS {
       const signedAttRequest = await this.sign(signParams);
       console.log('signedAttRequest====', signedAttRequest);
       const attParams = assemblyParams(signedAttRequest, effectiveAlgoUrls);
+      attRequest.requestid = attParams.requestid;
       const getAttestationRes = await getAttestation(attParams);
       
       if (getAttestationRes.retcode !== "0") {
@@ -317,8 +319,15 @@ class PrimusCoreTLS {
       const res: any = await getAttestationResult(timeout);
       const { retcode, content, details } = res
       if (retcode === '0') {
-        const { balanceGreaterThanBaseValue, signature, encodedData, extraData } = content
+        const { balanceGreaterThanBaseValue, signature, encodedData, extraData, privateData } = content
         if (balanceGreaterThanBaseValue === 'true' && signature) {
+          if (
+            typeof privateData === 'string' &&
+            typeof attParams.requestid === 'string' &&
+            attParams.requestid.trim() !== ''
+          ) {
+            this._allPrivateData[attParams.requestid] = privateData;
+          }
           void eventReport({
             ...eventReportBaseParams,
             status: "SUCCESS",
@@ -380,6 +389,20 @@ class PrimusCoreTLS {
     } finally {
       // Always clear the attestation flag when done
       this._isAttesting = false;
+    }
+  }
+
+  getPrivateData(requestId: string, keyName: string): string | undefined {
+    const privateData = this._allPrivateData[requestId];
+    if (!privateData || typeof privateData !== 'string') {
+      return undefined;
+    }
+    try {
+      const parsed = JSON.parse(privateData);
+      return parsed[keyName];
+    } catch (err) {
+      console.error("Failed to parse privateData:", (err as Error).message);
+      return undefined;
     }
   }
 

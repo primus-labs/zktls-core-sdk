@@ -7,6 +7,7 @@ export class AttRequest {
   responseResolves?: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][];
   userAddress: string;
   timestamp: number;
+  requestid?: string;
   
   attMode?: AttMode;
   attConditions?: object;
@@ -55,7 +56,6 @@ export class AttRequest {
     return JSON.stringify(getInstanceProperties(this));
   }
 }
-
 
 
 
