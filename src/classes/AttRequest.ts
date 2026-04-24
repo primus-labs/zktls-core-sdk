@@ -12,6 +12,7 @@ export class AttRequest {
   attMode?: AttMode;
   attConditions?: object;
   additionParams?: string;
+  extendedParams?: string;
   sslCipher?: AttSslCipher;
   noProxy?: boolean;
   requestInterval?: number; // in milliseconds
@@ -33,6 +34,9 @@ export class AttRequest {
   }
   setAdditionParams(additionParams: string) {
     this.additionParams = additionParams
+  }
+  setExtendedParams(extendedParams: string) {
+    this.extendedParams = extendedParams
   }
   setAttMode({algorithmType, resultType='plain'}: AttMode) {
     this.attMode = {
@@ -56,7 +60,6 @@ export class AttRequest {
     return JSON.stringify(getInstanceProperties(this));
   }
 }
-
 
 
 

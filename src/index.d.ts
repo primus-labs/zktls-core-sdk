@@ -49,6 +49,7 @@ export type FullAttestationParams = BaseAttestationParams & {
     attMode?: AttMode;
     attConditions?: object;
     additionParams?: string;
+    extendedParams?: string;
     sslCipher?: AttSslCipher;
     noProxy?: boolean;
     requestInterval?: number;

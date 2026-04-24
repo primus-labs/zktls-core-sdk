@@ -35,16 +35,23 @@ describe('test', () => {
                 ],
             ];
             const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
+
+            // Hide query parameters in the request URL.
+            generateRequestParamsRes.setExtendedParams(JSON.stringify({ attUrlOptimization: true }));
+
+            // Compute the salted hash for a specific query parameter.
             const attConditions = [
                 [{ field: 'instType', op: 'SHA256_WITH_SALT'}],
             ];
             generateRequestParamsRes.setAttConditions(attConditions);
+
+            // Start the zkTLS flow and verify the attestation.
             const attestation = await zkTLS.startAttestation(generateRequestParamsRes, 10 * 60 * 1000);
             console.log("attestation=", attestation);
             const verifyAttestationRes = zkTLS.verifyAttestation(attestation)
             console.log("verifyAttestationRes=", verifyAttestationRes);
 
-            
+
             // Recompute the salted request hash from private data and verify it matches the attested query hash.
             const privateData = zkTLS.getPrivateData(generateRequestParamsRes.requestid!, "instType");
             console.log("privateData=", privateData);
