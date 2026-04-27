@@ -7,13 +7,20 @@ import { encodeAttestation } from "./utils";
 import { init, getAttestation, getAttestationResult, AlgorithmBackend } from "./primus_zk";
 import { assemblyParams } from './assembly_params';
 import { ZkAttestationError } from './classes/Error'
-import { AttestationErrorCode } from 'config/error';
+import { ALGO_ERR_NORMALIZE_TO_50000, AttestationErrorCode } from './config/error';
 import { getAppQuote } from './api';
 import { eventReport } from './utils/eventReport'
 import { ClientType } from './api/index.d';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require('../package.json') as { name: string; version: string };
+
+function buildEventReportCode(code: string, subCode: unknown): string {
+  if (subCode === undefined || subCode === null || subCode === '') {
+    return code;
+  }
+  return `${code}:${String(subCode)}`;
+}
 
 class PrimusCoreTLS {
   appId: string;
@@ -358,16 +365,36 @@ class PrimusCoreTLS {
           return Promise.reject(new ZkAttestationError(errorCode as AttestationErrorCode, '', res))
         }
       } else if (retcode === '2') {
-        const { errlog: { code } } = details;
+        const { errlog: { code: rawCode, desc: detailsDesc } = {} } = details || {};
+        const rawNum = rawCode != null && rawCode !== '' ? Number(rawCode) : NaN;
+        const mapped50000Sub = ALGO_ERR_NORMALIZE_TO_50000[rawNum];
+        let resolvedCode =
+          rawCode != null && String(rawCode).trim() !== '' ? String(rawCode) : '99999';
+        let resolvedSubCode: string | undefined;
+        if (mapped50000Sub !== undefined) {
+          resolvedCode = `50000:${mapped50000Sub}`;
+        } else if (rawNum === 30001) {
+          resolvedSubCode =
+            typeof detailsDesc === 'string' ? detailsDesc.match(/\b\d{3}\b/)?.[0] : undefined;
+        }
+
+        const reportCode = buildEventReportCode(resolvedCode, resolvedSubCode);
         void eventReport({
           ...eventReportBaseParams,
-          status: "FAILED",
+          status: 'FAILED',
           detail: {
-            code,
-            desc: ""
+            code: reportCode,
+            desc: '',
           },
-        })
-        return Promise.reject(new ZkAttestationError(code, '', res))
+        });
+        return Promise.reject(
+          new ZkAttestationError(
+            resolvedCode as AttestationErrorCode,
+            '',
+            res,
+            resolvedSubCode
+          )
+        );
       }
     } catch (e: any) {
       if (e?.code === 'timeout') {
