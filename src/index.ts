@@ -10,7 +10,7 @@ import { ZkAttestationError } from './classes/Error'
 import { ALGO_ERR_NORMALIZE_TO_50000, AttestationErrorCode } from './config/error';
 import { getAppQuote } from './api';
 import { eventReport } from './utils/eventReport'
-import { ClientType } from './api/index.d';
+import { ClientType, EventReportRawData } from './api/index.d';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require('../package.json') as { name: string; version: string };
@@ -21,6 +21,8 @@ function buildEventReportCode(code: string, subCode: unknown): string {
   }
   return `${code}:${String(subCode)}`;
 }
+
+const EVENT_REPORT_SKIP_FAILED_CODES = new Set(['00003', '00004', '00005']);
 
 class PrimusCoreTLS {
   appId: string;
@@ -33,6 +35,17 @@ class PrimusCoreTLS {
     this.appId = '';
     this.appSecret = '';
     this.algoUrls = new AlgorithmUrls()
+  }
+
+  private reportEventIfNeeded(rawDataObj: EventReportRawData): void {
+    if (rawDataObj.status === 'FAILED') {
+      const reportCode = rawDataObj.detail?.code;
+      const baseCode = reportCode ? reportCode.split(':')[0] : undefined;
+      if (baseCode && EVENT_REPORT_SKIP_FAILED_CODES.has(baseCode)) {
+        return;
+      }
+    }
+    void eventReport(rawDataObj);
   }
 
   async init(appId: string, appSecret: string, mode: AlgorithmBackend = 'auto'): Promise<string | boolean> {
@@ -313,7 +326,7 @@ class PrimusCoreTLS {
       
       if (getAttestationRes.retcode !== "0") {
         const errorCode = getAttestationRes.retcode === '2' ? '00001' : '00000';
-        void eventReport({
+        this.reportEventIfNeeded({
           ...eventReportBaseParams,
           status: "FAILED",
           detail: {
@@ -335,7 +348,7 @@ class PrimusCoreTLS {
           ) {
             this._allPrivateData[attParams.requestid] = privateData;
           }
-          void eventReport({
+          this.reportEventIfNeeded({
             ...eventReportBaseParams,
             status: "SUCCESS",
           })
@@ -353,7 +366,7 @@ class PrimusCoreTLS {
           } else {
             errorCode = '00104';
           }
-          void eventReport({
+          this.reportEventIfNeeded({
             ...eventReportBaseParams,
             status: "FAILED",
             detail: {
@@ -379,7 +392,7 @@ class PrimusCoreTLS {
         }
 
         const reportCode = buildEventReportCode(resolvedCode, resolvedSubCode);
-        void eventReport({
+        this.reportEventIfNeeded({
           ...eventReportBaseParams,
           status: 'FAILED',
           detail: {
@@ -398,7 +411,7 @@ class PrimusCoreTLS {
       }
     } catch (e: any) {
       if (e?.code === 'timeout') {
-        void eventReport({
+        this.reportEventIfNeeded({
           ...eventReportBaseParams,
           status: "FAILED",
           detail: {
