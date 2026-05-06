@@ -382,7 +382,7 @@ class PrimusCoreTLS {
         const rawNum = rawCode != null && rawCode !== '' ? Number(rawCode) : NaN;
         const mapped50000Sub = ALGO_ERR_NORMALIZE_TO_50000[rawNum];
         let resolvedCode =
-          rawCode != null && String(rawCode).trim() !== '' ? String(rawCode) : '99999';
+          rawCode != null && String(rawCode).trim() !== '' ? String(rawCode) : '99999:001';
         let resolvedSubCode: string | undefined;
         if (mapped50000Sub !== undefined) {
           resolvedCode = `50000:${mapped50000Sub}`;

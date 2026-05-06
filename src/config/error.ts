@@ -6,8 +6,8 @@ export type AttestationErrorCode =
   '30001' | '30001:301' | '30001:302' | '30001:401' | '30001:403' | '30001:404' | '30001:429' |
   '30002' | '30003' | '30004' | '30005' | '30006' |
   '40001' | '40002' |
-  '50000:501' | '50000:502' | '50003' | '50004' | '50000:505' | '50006' | '50000:507' | '50000:508' | '50009' | '50000:510' | '50011' |
-  '99999' |
+  '50000:501' | '50000:502' | '50003' | '50004' | '50000:505' | '50006' | '50000:507' | '50000:508' | '50009' | '50000:510' |   '50011' |
+  '99999' | '99999:001' |
   '-1200010' |
   '-1002001' | '-1002002' | '-1002003' | '-1002004' | '-1002005'
   ;
@@ -67,6 +67,7 @@ export const ErrorCodeMAP = {
   '50000:510': 'Internal algorithm error. Contact Primus Team for assistance.',
   '50011': 'Unsupported TLS version. Contact Primus Team for assistance.',
   '99999': 'Undefined error. Please try again later.',
+  '99999:001': 'Undefined error. Please try again later.',
   '-1002001': 'Invalid app ID.',
   '-1002002': 'Invalid app secret.',
   '-1002003': 'Trial quota exhausted.',
