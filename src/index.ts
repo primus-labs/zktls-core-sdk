@@ -1,6 +1,13 @@
 import { ethers } from 'ethers';
 import { PADOADDRESS } from './config/constants'
-import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, Attestation } from './index.d'
+import {
+  AttNetworkRequest,
+  AttNetworkResponseResolve,
+  FullAttestationParams,
+  SignedAttRequest,
+  StartAttestationInput,
+  Attestation
+} from './index.d'
 import { AttRequest } from './classes/AttRequest'
 import { AlgorithmUrls } from "./classes/AlgorithmUrls";
 import { encodeAttestation } from "./utils";
@@ -48,9 +55,9 @@ class PrimusCoreTLS {
     void eventReport(rawDataObj);
   }
 
-  async init(appId: string, appSecret: string, mode: AlgorithmBackend = 'auto'): Promise<string | boolean> {
+  async init(appId: string, appSecret?: string, mode: AlgorithmBackend = 'auto'): Promise<string | boolean> {
     this.appId = appId
-    this.appSecret = appSecret
+    this.appSecret = appSecret?.trim() ? appSecret : undefined
     return await init(mode);
   }
 
@@ -127,7 +134,7 @@ class PrimusCoreTLS {
     })
   }
 
-  async sign(signParams: string): Promise<SignedAttRequest> {
+  async sign(signParams: string): Promise<string> {
     if (this.appSecret) {
       const wallet = new ethers.Wallet(this.appSecret);
       const messageHash = ethers.utils.keccak256(new TextEncoder().encode(signParams));
@@ -136,14 +143,60 @@ class PrimusCoreTLS {
         attRequest: JSON.parse(signParams),
         appSignature: sig
       };
-      return result;
+      return JSON.stringify(result);
     } else {
       throw new Error("Must pass appSecret");
     }
   }
 
+  private _validateSignedAttRequest(signedAttRequest: SignedAttRequest): void {
+    if (!signedAttRequest || typeof signedAttRequest !== 'object') {
+      throw new ZkAttestationError('00005', 'Invalid signed attestation parameters')
+    }
+
+    const { attRequest, appSignature } = signedAttRequest
+    if (!attRequest || typeof attRequest !== 'object') {
+      throw new ZkAttestationError('00005', 'Missing attRequest')
+    }
+    if (!appSignature || typeof appSignature !== 'string' || appSignature.trim() === '') {
+      throw new ZkAttestationError('00005', 'Missing or invalid appSignature')
+    }
+    if (!attRequest.appId || typeof attRequest.appId !== 'string' || attRequest.appId.trim() === '') {
+      throw new ZkAttestationError('00005', 'Missing or invalid appId')
+    }
+    if (typeof attRequest.timestamp !== 'number' || !Number.isFinite(attRequest.timestamp)) {
+      throw new ZkAttestationError('00005', 'Missing or invalid timestamp')
+    }
+    if (!attRequest.userAddress || typeof attRequest.userAddress !== 'string' || attRequest.userAddress.trim() === '') {
+      throw new ZkAttestationError('00005', 'Missing or invalid userAddress')
+    }
+  }
+
+  private async _resolveSignedAttRequest(input: StartAttestationInput): Promise<SignedAttRequest> {
+    if (typeof input === 'string') {
+      try {
+        const signedAttRequest = JSON.parse(input) as SignedAttRequest
+        this._validateSignedAttRequest(signedAttRequest)
+        return signedAttRequest
+      } catch (error: unknown) {
+        if (error instanceof ZkAttestationError) {
+          throw error
+        }
+        throw new ZkAttestationError('00005', 'Invalid signed attestation JSON string')
+      }
+    }
+
+    if (!input || typeof input.toJsonString !== 'function') {
+      throw new ZkAttestationError('00005', 'Invalid attestation input')
+    }
+
+    const signedAttRequest = JSON.parse(await this.sign(input.toJsonString())) as SignedAttRequest
+    this._validateSignedAttRequest(signedAttRequest)
+    return signedAttRequest
+  }
+
   private _validateAttestationParams(
-    attRequest: AttRequest,
+    attRequest: AttRequest | FullAttestationParams,
     timeout: number,
     algoUrls?: unknown
   ): void {
@@ -283,15 +336,18 @@ class PrimusCoreTLS {
   }
 
   async startAttestation(
-    attRequest: AttRequest,
+    input: StartAttestationInput,
     timeout: number = 2 * 60 * 1000,
     algoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
   ): Promise<any> {
+    let signedAttRequest: SignedAttRequest
     try {
-      this._validateAttestationParams(attRequest, timeout, algoUrls)
+      signedAttRequest = await this._resolveSignedAttRequest(input)
+      this._validateAttestationParams(signedAttRequest.attRequest, timeout, algoUrls)
     } catch (error: any) {
       return Promise.reject(error)
     }
+    const { attRequest } = signedAttRequest
     const effectiveAlgoUrls = this._resolveAlgoUrlsOverride(algoUrls)
     // Check if there's already an attestation in progress
     if (this._isAttesting) {
@@ -316,12 +372,11 @@ class PrimusCoreTLS {
       // Network errors will be caught and logged, but won't stop execution
       await this._checkAppQuote();
 
-      const signParams = attRequest.toJsonString()
-      console.log('signParams====', signParams);
-      const signedAttRequest = await this.sign(signParams);
-      console.log('signedAttRequest====', signedAttRequest);
+      console.log('signedAttRequest====', JSON.stringify(signedAttRequest));
       const attParams = assemblyParams(signedAttRequest, effectiveAlgoUrls);
-      attRequest.requestid = attParams.requestid;
+      if (input instanceof AttRequest) {
+        input.requestid = attParams.requestid;
+      }
       const getAttestationRes = await getAttestation(attParams);
       
       if (getAttestationRes.retcode !== "0") {
@@ -504,3 +559,4 @@ class PrimusCoreTLS {
 }
 
 export { PrimusCoreTLS, Attestation };
+export type { StartAttestationInput } from './index.d';

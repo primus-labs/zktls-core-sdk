@@ -60,6 +60,8 @@ export type SignedAttRequest = {
     appSignature: string
 }
 
+export type StartAttestationInput = import('./classes/AttRequest').AttRequest | string;
+
 export type ApiResponse<T = any> = {
     rc: number;
     mc: string;
