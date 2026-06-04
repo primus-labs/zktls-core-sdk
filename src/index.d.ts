@@ -62,6 +62,40 @@ export type SignedAttRequest = {
 
 export type StartAttestationInput = import('./classes/AttRequest').AttRequest | string;
 
+export type PrimusInitOptions = {
+    backend?: import('./primus_zk').AlgorithmBackend;
+    concurrency?: number;
+}
+
+export type AttestationProgressEvent =
+    | {
+        type: 'stream-data';
+        requestId: string;
+        sequence?: number;
+        data: unknown;
+        raw: unknown;
+    }
+    | {
+        type: 'proof-ready';
+        requestId: string;
+        raw: unknown;
+    }
+    | {
+        type: 'error';
+        requestId: string;
+        error: Error;
+        raw?: unknown;
+    }
+
+export type StartAttestationOptions = {
+    timeout?: number;
+    algoUrls?: Pick<import('./classes/AlgorithmUrls').AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>;
+    stream?: boolean;
+    pollIntervalMs?: number;
+    onProgress?: (event: AttestationProgressEvent) => void | Promise<void>;
+    abortOnProgressError?: boolean;
+}
+
 export type ApiResponse<T = any> = {
     rc: number;
     mc: string;

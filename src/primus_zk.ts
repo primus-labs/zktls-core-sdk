@@ -3,6 +3,11 @@ import os from 'os';
 import path from 'path';
 global.WebSocket = require('ws');
 export type AlgorithmBackend = 'auto' | 'native' | 'wasm';
+export type GetAttestationResultOptions = {
+  timeout?: number;
+  pollIntervalMs?: number;
+  onResult?: (result: unknown) => void | Promise<void>;
+};
 
 const ALGORITHM_VERSION = '1.4.19';
 
@@ -88,30 +93,51 @@ export const getAttestation = async (paramsObj: any) => {
 };
 
 
-export const getAttestationResult = async (timeout = 2 * 60 * 1000) => {
+export const getAttestationResult = async (optionsOrTimeout: number | GetAttestationResultOptions = 2 * 60 * 1000) => {
+  const options: GetAttestationResultOptions =
+    typeof optionsOrTimeout === 'number' ? { timeout: optionsOrTimeout } : optionsOrTimeout;
+  const timeout = options.timeout ?? 2 * 60 * 1000;
+  const pollIntervalMs = options.pollIntervalMs ?? 500;
   const params = buildAlgorithmParams('getAttestationResult', { requestid: '1' });
 
   return new Promise((resolve, reject) => {
     const start = performance.now();
+    let lastResult = null;
     const tick = async () => {
       const timeGap = performance.now() - start;
       let resObj = null;
       try {
         const res = await callAlgorithm(params);
         resObj = JSON.parse(res);
+        if (resObj) {
+          lastResult = resObj;
+        }
       } catch (err) {
       }
 
       if (resObj && (resObj.retcode == "0" || resObj.retcode == "2")) {
         // console.log("resObj:", resObj);
         resolve(resObj);
+      } else if (resObj && resObj.retcode == "1") {
+        Promise.resolve(options.onResult?.(resObj))
+          .then(() => {
+            if (performance.now() - start > timeout) {
+              reject({
+                code: 'timeout',
+                data: lastResult
+              });
+            } else {
+              setTimeout(tick, pollIntervalMs);
+            }
+          })
+          .catch(reject);
       } else if (timeGap > timeout) {
         reject({
           code: 'timeout',
-          data: resObj
+          data: lastResult
         });
       } else {
-        setTimeout(tick, 500);
+        setTimeout(tick, pollIntervalMs);
       }
     };
     tick();
