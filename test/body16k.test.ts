@@ -34,7 +34,7 @@ describe(`${REQUEST_BODY_SIZE_KIB}K request body`, () => {
         const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
 
         generateRequestParamsRes.setAttMode({
-            algorithmType: "mpctls",
+            algorithmType: "proxytls",
             resultType: "plain"
         });
 
