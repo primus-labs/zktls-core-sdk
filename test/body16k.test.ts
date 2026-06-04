@@ -1,6 +1,9 @@
 import { PrimusCoreTLS } from '../src/index';
 
-describe('16K request body', () => {
+const REQUEST_BODY_SIZE_KIB = Number(process.env.ZKTLS_TEST_BODY_SIZE_KIB ?? 16);
+const REQUEST_BODY_SIZE_BYTES = REQUEST_BODY_SIZE_KIB * 1024;
+
+describe(`${REQUEST_BODY_SIZE_KIB}K request body`, () => {
     jest.setTimeout(10 * 60 * 1000);
     const appId = process.env.ZKTLS_APP_ID;
     const appSecret = process.env.ZKTLS_APP_SECRET;
@@ -8,12 +11,12 @@ describe('16K request body', () => {
         throw new Error('ZKTLS_APP_ID and ZKTLS_APP_SECRET must be set in .env');
     }
 
-    it('generate attestation with a 16 KiB POST body', async () => {
+    it(`generate attestation with a ${REQUEST_BODY_SIZE_KIB} KiB POST body`, async () => {
         const zkTLS = new PrimusCoreTLS();
         const result = await zkTLS.init(appId, appSecret);
         console.log("-------------init result=", result);
 
-        const body = 'a'.repeat(16 * 1024);
+        const body = 'a'.repeat(REQUEST_BODY_SIZE_BYTES);
         const request = {
             url: "https://postman-echo.com/post",
             method: "POST",
@@ -31,7 +34,7 @@ describe('16K request body', () => {
         const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
 
         generateRequestParamsRes.setAttMode({
-            algorithmType: "proxytls",
+            algorithmType: "mpctls",
             resultType: "plain"
         });
 
@@ -40,9 +43,9 @@ describe('16K request body', () => {
         console.log("attestation.data=", attestation.data);
 
         const attDataObject = JSON.parse(attestation.data);
-        expect(Buffer.byteLength(body, 'utf8')).toBe(16 * 1024);
+        expect(Buffer.byteLength(body, 'utf8')).toBe(REQUEST_BODY_SIZE_BYTES);
         expect(attDataObject.data).toBe(body);
-        expect(Buffer.byteLength(attDataObject.data, 'utf8')).toBe(16 * 1024);
+        expect(Buffer.byteLength(attDataObject.data, 'utf8')).toBe(REQUEST_BODY_SIZE_BYTES);
 
         const verifyAttestationRes = zkTLS.verifyAttestation(attestation);
         console.log("verifyAttestationRes=", verifyAttestationRes);
