@@ -431,7 +431,10 @@ class PrimusCoreTLS {
       await this._checkAppQuote();
 
       console.log('signedAttRequest====', JSON.stringify(signedAttRequest));
-      const attParams = assemblyParams(signedAttRequest, effectiveAlgoUrls);
+      const attParams = {
+        ...assemblyParams(signedAttRequest, effectiveAlgoUrls),
+        stream: startOptions.stream,
+      };
       currentRequestId = attParams.requestid;
       if (input instanceof AttRequest) {
         input.requestid = attParams.requestid;
@@ -451,7 +454,9 @@ class PrimusCoreTLS {
           res = normalizedPoolResult.result;
         }
       } else {
-        getAttestationRes = await getAttestation(attParams);
+        getAttestationRes = await getAttestation(attParams, {
+          onStream: (result) => this._handleAlgorithmProgress(result, attParams.requestid, startOptions),
+        });
       }
       
       if (getAttestationRes.retcode !== "0") {
@@ -469,7 +474,6 @@ class PrimusCoreTLS {
           type: 'error',
           requestId: currentRequestId,
           error: startError,
-          raw: getAttestationRes,
         });
         return Promise.reject(startError)
       }
@@ -477,7 +481,6 @@ class PrimusCoreTLS {
         res = await getAttestationResult({
           timeout,
           pollIntervalMs: startOptions.pollIntervalMs,
-          onResult: (result) => this._handleAlgorithmProgress(result, attParams.requestid, startOptions),
         });
       }
       const { retcode, content, details } = res
@@ -494,7 +497,6 @@ class PrimusCoreTLS {
           await this._emitProgressIfNeeded(startOptions, {
             type: 'proof-ready',
             requestId: attParams.requestid,
-            raw: res,
           });
           this.reportEventIfNeeded({
             ...eventReportBaseParams,
@@ -528,7 +530,6 @@ class PrimusCoreTLS {
             type: 'error',
             requestId: currentRequestId,
             error: proofError,
-            raw: res,
           });
           return Promise.reject(proofError)
         }
@@ -565,7 +566,6 @@ class PrimusCoreTLS {
           type: 'error',
           requestId: currentRequestId,
           error: algorithmError,
-          raw: res,
         });
         return Promise.reject(algorithmError);
       }
@@ -576,7 +576,6 @@ class PrimusCoreTLS {
           type: 'error',
           requestId: currentRequestId,
           error: timeoutError,
-          raw: e.data,
         });
         this.reportEventIfNeeded({
           ...eventReportBaseParams,
@@ -645,12 +644,14 @@ class PrimusCoreTLS {
     if (raw?.retcode !== '1') {
       return;
     }
+    if (raw.content?.data === undefined) {
+      return;
+    }
     await this._emitProgressIfNeeded(options, {
       type: 'stream-data',
       requestId: raw.requestid || requestId,
       sequence: raw.content?.sequence,
       data: raw.content?.data,
-      raw,
     });
   }
 

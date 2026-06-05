@@ -7,7 +7,9 @@ export class LocalAlgorithmRunner implements AlgorithmRunner {
   }
 
   async runAttestation(attParams: unknown, options: RunAttestationOptions): Promise<unknown> {
-    const startResult = await getAttestation(attParams);
+    const startResult = await getAttestation(attParams, {
+      onStream: options.onResult,
+    });
     if (startResult.retcode !== '0') {
       return {
         phase: 'start',
@@ -17,7 +19,6 @@ export class LocalAlgorithmRunner implements AlgorithmRunner {
     const result = await getAttestationResult({
       timeout: options.timeout,
       pollIntervalMs: options.pollIntervalMs,
-      onResult: options.onResult,
     });
     return {
       phase: 'result',

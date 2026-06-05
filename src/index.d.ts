@@ -73,18 +73,15 @@ export type AttestationProgressEvent =
         requestId: string;
         sequence?: number;
         data: unknown;
-        raw: unknown;
     }
     | {
         type: 'proof-ready';
         requestId: string;
-        raw: unknown;
     }
     | {
         type: 'error';
         requestId: string;
         error: Error;
-        raw?: unknown;
     }
 
 export type StartAttestationOptions = {

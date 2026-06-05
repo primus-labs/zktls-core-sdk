@@ -1,5 +1,5 @@
 import { PrimusCoreTLS } from '../src/index';
-import { getAttestationResult } from '../src/primus_zk';
+import { getAttestation, getAttestationResult } from '../src/primus_zk';
 
 jest.mock('../src/primus_zk', () => ({
   init: jest.fn().mockResolvedValue(true),
@@ -58,14 +58,16 @@ const finalResult = {
 describe('startAttestation options', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (getAttestation as jest.Mock).mockResolvedValue({ retcode: '0' });
+    (getAttestationResult as jest.Mock).mockReset();
   });
 
-  it('emits stream progress events from getAttestationResult options', async () => {
+  it('does not emit stream progress events from getAttestationResult polling results', async () => {
     const client = new PrimusCoreTLS();
     await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
 
     (getAttestationResult as jest.Mock).mockImplementation(async (options) => {
-      await options.onResult({
+      await options.onResult?.({
         retcode: '1',
         status: 'streaming',
         content: {
@@ -88,14 +90,16 @@ describe('startAttestation options', () => {
       expect.objectContaining({
         timeout: 1234,
         pollIntervalMs: 25,
+      })
+    );
+    expect(getAttestationResult).not.toHaveBeenCalledWith(
+      expect.objectContaining({
         onResult: expect.any(Function),
       })
     );
-    expect(onProgress).toHaveBeenCalledWith(
+    expect(onProgress).not.toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'stream-data',
-        sequence: 7,
-        data: { chunk: 'hello' },
       })
     );
     expect(onProgress).toHaveBeenCalledWith(
@@ -103,6 +107,58 @@ describe('startAttestation options', () => {
         type: 'proof-ready',
       })
     );
+    expect(onProgress.mock.calls[0][0]).not.toHaveProperty('raw');
+  });
+
+  it('passes stream option to getAttestation params', async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
+
+    (getAttestationResult as jest.Mock).mockResolvedValue(finalResult);
+
+    await client.startAttestation(makeRequest(client), {
+      stream: true,
+    });
+
+    expect(getAttestation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stream: true,
+      }),
+      expect.any(Object)
+    );
+  });
+
+  it('emits stream progress events from getAttestation stream callback', async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
+
+    (getAttestation as jest.Mock).mockImplementation(async (_params, options) => {
+      await options.onStream({
+        retcode: '1',
+        status: 'streaming',
+        content: {
+          sequence: 8,
+          data: { chunk: 'native-stream' },
+        },
+      });
+      return { retcode: '0' };
+    });
+    (getAttestationResult as jest.Mock).mockResolvedValue(finalResult);
+
+    const onProgress = jest.fn();
+    await client.startAttestation(makeRequest(client), {
+      stream: true,
+      onProgress,
+    });
+
+    expect(onProgress).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'stream-data',
+        sequence: 8,
+        data: { chunk: 'native-stream' },
+      })
+    );
+    expect(onProgress.mock.calls[0][0]).not.toHaveProperty('raw');
   });
 
   it('keeps the existing concurrency=1 rejection behavior', async () => {

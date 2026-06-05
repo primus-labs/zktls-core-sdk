@@ -8,8 +8,12 @@ export type GetAttestationResultOptions = {
   pollIntervalMs?: number;
   onResult?: (result: unknown) => void | Promise<void>;
 };
+export type GetAttestationOptions = {
+  onStream?: (result: unknown) => void | Promise<void>;
+};
+let currentStreamContext: { paramsObj: any; options: GetAttestationOptions } | undefined;
 
-const ALGORITHM_VERSION = '1.4.19';
+const ALGORITHM_VERSION = '1.4.30';
 
 const buildAlgorithmParams = (method: string, params: Record<string, unknown>) =>
   JSON.stringify({ method, version: ALGORITHM_VERSION, params });
@@ -92,6 +96,21 @@ function processRpc(msg: string): string {
 }
 function processStream(buf: Uint8Array) {
   console.log("[js] recv stream data:", buf.length, buf, "data:", Buffer.from(buf).toString('utf8'));
+  const paramsObj = currentStreamContext?.paramsObj;
+  if (!paramsObj) {
+    return;
+  }
+  const streamResult = {
+    retcode: '1',
+    status: 'streaming',
+    requestid: paramsObj.requestid,
+    content: {
+      data: buf,
+    },
+  };
+  Promise.resolve(currentStreamContext?.options.onStream?.(streamResult)).catch((err) => {
+    console.error("[error] stream callback failed:", err);
+  });
 }
 function registerCallback(paramsObj: any) {
   console.log("paramsObj.stream", paramsObj.stream);
@@ -114,7 +133,8 @@ function registerCallback(paramsObj: any) {
   }
 }
 
-export const getAttestation = async (paramsObj: any) => {
+export const getAttestation = async (paramsObj: any, options: GetAttestationOptions = {}) => {
+  currentStreamContext = paramsObj.stream == "true" || paramsObj.stream == true ? { paramsObj, options } : undefined;
   registerCallback(paramsObj);
 
   const params = buildAlgorithmParams('getAttestation', paramsObj);
