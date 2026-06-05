@@ -14,11 +14,13 @@ const ALGORITHM_VERSION = '1.4.19';
 const buildAlgorithmParams = (method: string, params: Record<string, unknown>) =>
   JSON.stringify({ method, version: ALGORITHM_VERSION, params });
 
+let nativeAddon: any = null;
 async function initAlgorithm(mode: AlgorithmBackend = 'auto'): Promise<(params: string) => Promise<string>> {
   const tryLoadNative = (): ((params: string) => Promise<string>) | null => {
     try {
       const addon = require(path.join(__dirname, '../build/Release/primus-zktls-native.node'));
       console.log('[info] Native addon loaded.');
+      nativeAddon = addon;
       return async (params: string) => addon.callAlgorithm(params);
     } catch (e) {
       console.warn('[warn] Native addon failed:', e.message);
@@ -84,8 +86,36 @@ export const init = async (mode: AlgorithmBackend = 'auto') => {
   return result;
 };
 
+function processRpc(msg: string): string {
+  console.log("[js] recv rpc data:", msg);
+  return '{"data":"response from NodeJS"}';
+}
+function processStream(buf: Uint8Array) {
+  console.log("[js] recv stream data:", buf.length, buf, "data:", Buffer.from(buf).toString('utf8'));
+}
+function registerCallback(paramsObj: any) {
+  console.log("paramsObj.stream", paramsObj.stream);
+  // unregister first
+  if (nativeAddon) {
+    nativeAddon.setRpcHandler();
+    nativeAddon.setStreamHandler();
+  } else {
+    globalThis._onRpc = undefined;
+    globalThis._onStream = undefined;
+  }
+  if (paramsObj.stream == "true" || paramsObj.stream == true) {
+    if (nativeAddon) {
+      nativeAddon.setRpcHandler(processRpc);
+      nativeAddon.setStreamHandler(processStream);
+    } else {
+      globalThis._onRpc = processRpc;
+      globalThis._onStream = processStream;
+    }
+  }
+}
 
 export const getAttestation = async (paramsObj: any) => {
+  registerCallback(paramsObj);
 
   const params = buildAlgorithmParams('getAttestation', paramsObj);
   const result = await callAlgorithm(params);
