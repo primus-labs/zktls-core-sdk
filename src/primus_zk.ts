@@ -113,7 +113,7 @@ function processStream(buf: Uint8Array) {
   });
 }
 function registerCallback(paramsObj: any) {
-  console.log("paramsObj.stream", paramsObj.stream);
+  console.log("paramsObj.rpc", paramsObj.rpc, "paramsObj.stream", paramsObj.stream);
   // unregister first
   if (nativeAddon) {
     nativeAddon.setRpcHandler();
@@ -122,19 +122,24 @@ function registerCallback(paramsObj: any) {
     globalThis._onRpc = undefined;
     globalThis._onStream = undefined;
   }
-  if (paramsObj.stream == "true" || paramsObj.stream == true) {
+  if (paramsObj.rpc === "true" || paramsObj.rpc === true) {
     if (nativeAddon) {
       nativeAddon.setRpcHandler(processRpc);
-      nativeAddon.setStreamHandler(processStream);
     } else {
       globalThis._onRpc = processRpc;
+    }
+  }
+  if (paramsObj.stream === "true" || paramsObj.stream === true) {
+    if (nativeAddon) {
+      nativeAddon.setStreamHandler(processStream);
+    } else {
       globalThis._onStream = processStream;
     }
   }
 }
 
 export const getAttestation = async (paramsObj: any, options: GetAttestationOptions = {}) => {
-  currentStreamContext = paramsObj.stream == "true" || paramsObj.stream == true ? { paramsObj, options } : undefined;
+  currentStreamContext = paramsObj.stream === "true" || paramsObj.stream === true ? { paramsObj, options } : undefined;
   registerCallback(paramsObj);
 
   const params = buildAlgorithmParams('getAttestation', paramsObj);
