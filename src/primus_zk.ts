@@ -91,11 +91,11 @@ export const init = async (mode: AlgorithmBackend = 'auto') => {
 };
 
 function processRpc(msg: string): string {
-  console.log("[js] recv rpc data:", msg);
+  // console.log("[js] recv rpc data:", msg);
   return '{"data":"response from NodeJS"}';
 }
 function processStream(buf: Uint8Array) {
-  console.log("[js] recv stream data:", buf.length, buf, "data:", Buffer.from(buf).toString('utf8'));
+  // console.log("[js] recv stream data:", buf.length, buf, "data:", Buffer.from(buf).toString('utf8'));
   const paramsObj = currentStreamContext?.paramsObj;
   if (!paramsObj) {
     return;
