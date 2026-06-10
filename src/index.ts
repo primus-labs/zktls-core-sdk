@@ -6,12 +6,16 @@ import {
   FullAttestationParams,
   SignedAttRequest,
   StartAttestationInput,
-  Attestation
+  Attestation,
+  PrimusInitOptions,
+  StartAttestationOptions,
+  AttestationProgressEvent
 } from './index.d'
 import { AttRequest } from './classes/AttRequest'
 import { AlgorithmUrls } from "./classes/AlgorithmUrls";
 import { encodeAttestation } from "./utils";
 import { init, getAttestation, getAttestationResult, AlgorithmBackend } from "./primus_zk";
+import { ProcessAlgorithmPool } from './algorithm/ProcessAlgorithmPool';
 import { assemblyParams } from './assembly_params';
 import { ZkAttestationError } from './classes/Error'
 import { ALGO_ERR_NORMALIZE_TO_50000, AttestationErrorCode } from './config/error';
@@ -37,6 +41,8 @@ class PrimusCoreTLS {
   algoUrls: AlgorithmUrls
   private _isAttesting: boolean = false;
   private _allPrivateData: Record<string, string> = {};
+  private _concurrency: number = 1;
+  private _algorithmPool?: ProcessAlgorithmPool;
 
   constructor() {
     this.appId = '';
@@ -55,10 +61,48 @@ class PrimusCoreTLS {
     void eventReport(rawDataObj);
   }
 
-  async init(appId: string, appSecret?: string, mode: AlgorithmBackend = 'auto'): Promise<string | boolean> {
+  async init(
+    appId: string,
+    appSecret?: string,
+    modeOrOptions: AlgorithmBackend | PrimusInitOptions = 'auto'
+  ): Promise<string | boolean> {
     this.appId = appId
     this.appSecret = appSecret?.trim() ? appSecret : undefined
-    return await init(mode);
+    const initOptions = this._resolveInitOptions(modeOrOptions);
+    this._concurrency = initOptions.concurrency;
+    if (this._algorithmPool) {
+      await this._algorithmPool.close();
+      this._algorithmPool = undefined;
+    }
+    if (this._concurrency > 1) {
+      this._algorithmPool = new ProcessAlgorithmPool({
+        backend: initOptions.backend,
+        concurrency: this._concurrency,
+      });
+      return this._algorithmPool.init({ backend: initOptions.backend });
+    }
+    return await init(initOptions.backend);
+  }
+
+  async close(): Promise<void> {
+    if (this._algorithmPool) {
+      await this._algorithmPool.close();
+      this._algorithmPool = undefined;
+    }
+  }
+
+  private _resolveInitOptions(modeOrOptions: AlgorithmBackend | PrimusInitOptions): Required<PrimusInitOptions> {
+    if (typeof modeOrOptions === 'string') {
+      return {
+        backend: modeOrOptions,
+        concurrency: 1,
+      };
+    }
+    const concurrency = modeOrOptions.concurrency ?? 1;
+    return {
+      backend: modeOrOptions.backend ?? 'auto',
+      concurrency: Number.isFinite(concurrency) && concurrency > 1 ? Math.floor(concurrency) : 1,
+    };
   }
 
   private _validateRequest(request: AttNetworkRequest, index?: number): void {
@@ -337,9 +381,20 @@ class PrimusCoreTLS {
 
   async startAttestation(
     input: StartAttestationInput,
-    timeout: number = 2 * 60 * 1000,
+    timeout?: number,
     algoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
+  ): Promise<any>;
+  async startAttestation(
+    input: StartAttestationInput,
+    options?: StartAttestationOptions
+  ): Promise<any>;
+  async startAttestation(
+    input: StartAttestationInput,
+    timeoutOrOptions: number | StartAttestationOptions = 2 * 60 * 1000,
+    positionalAlgoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
   ): Promise<any> {
+    const startOptions = this._resolveStartAttestationOptions(timeoutOrOptions, positionalAlgoUrls);
+    const { timeout, algoUrls } = startOptions;
     let signedAttRequest: SignedAttRequest
     try {
       signedAttRequest = await this._resolveSignedAttRequest(input)
@@ -350,14 +405,17 @@ class PrimusCoreTLS {
     const { attRequest } = signedAttRequest
     const effectiveAlgoUrls = this._resolveAlgoUrlsOverride(algoUrls)
     // Check if there's already an attestation in progress
-    if (this._isAttesting) {
+    if (this._concurrency <= 1 && this._isAttesting) {
       const errorCode = '00003';
       return Promise.reject(new ZkAttestationError(errorCode))
     }
 
     // Set attestation flag
-    this._isAttesting = true;
+    if (this._concurrency <= 1) {
+      this._isAttesting = true;
+    }
 
+    let currentRequestId = '';
     const eventReportBaseParams = {
       source: "",
       clientType: packageJson.name as ClientType,
@@ -373,11 +431,33 @@ class PrimusCoreTLS {
       await this._checkAppQuote();
 
       console.log('signedAttRequest====', JSON.stringify(signedAttRequest));
-      const attParams = assemblyParams(signedAttRequest, effectiveAlgoUrls);
+      const attParams = {
+        ...assemblyParams(signedAttRequest, effectiveAlgoUrls),
+        stream: startOptions.stream,
+      };
+      currentRequestId = attParams.requestid;
       if (input instanceof AttRequest) {
         input.requestid = attParams.requestid;
       }
-      const getAttestationRes = await getAttestation(attParams);
+      let getAttestationRes: any = { retcode: '0' };
+      let res: any;
+      if (this._algorithmPool) {
+        const poolResult = await this._algorithmPool.runAttestation(attParams, {
+          timeout,
+          pollIntervalMs: startOptions.pollIntervalMs,
+          onResult: (result) => this._handleAlgorithmProgress(result, attParams.requestid, startOptions),
+        });
+        const normalizedPoolResult = this._normalizeAlgorithmPoolResult(poolResult);
+        if (normalizedPoolResult.phase === 'start') {
+          getAttestationRes = normalizedPoolResult.result;
+        } else {
+          res = normalizedPoolResult.result;
+        }
+      } else {
+        getAttestationRes = await getAttestation(attParams, {
+          onStream: (result) => this._handleAlgorithmProgress(result, attParams.requestid, startOptions),
+        });
+      }
       
       if (getAttestationRes.retcode !== "0") {
         const errorCode = getAttestationRes.retcode === '2' ? '00001' : '00000';
@@ -389,9 +469,20 @@ class PrimusCoreTLS {
             desc: ""
           },
         })
-        return Promise.reject(new ZkAttestationError(errorCode))
+        const startError = new ZkAttestationError(errorCode);
+        await this._emitProgressIfNeeded(startOptions, {
+          type: 'error',
+          requestId: currentRequestId,
+          error: startError,
+        });
+        return Promise.reject(startError)
       }
-      const res: any = await getAttestationResult(timeout);
+      if (!this._algorithmPool) {
+        res = await getAttestationResult({
+          timeout,
+          pollIntervalMs: startOptions.pollIntervalMs,
+        });
+      }
       const { retcode, content, details } = res
       if (retcode === '0') {
         const { balanceGreaterThanBaseValue, signature, encodedData, extraData, privateData } = content
@@ -403,6 +494,10 @@ class PrimusCoreTLS {
           ) {
             this._allPrivateData[attParams.requestid] = privateData;
           }
+          await this._emitProgressIfNeeded(startOptions, {
+            type: 'proof-ready',
+            requestId: attParams.requestid,
+          });
           this.reportEventIfNeeded({
             ...eventReportBaseParams,
             status: "SUCCESS",
@@ -430,7 +525,13 @@ class PrimusCoreTLS {
             },
           })
 
-          return Promise.reject(new ZkAttestationError(errorCode as AttestationErrorCode, '', res))
+          const proofError = new ZkAttestationError(errorCode as AttestationErrorCode, '', res);
+          await this._emitProgressIfNeeded(startOptions, {
+            type: 'error',
+            requestId: currentRequestId,
+            error: proofError,
+          });
+          return Promise.reject(proofError)
         }
       } else if (retcode === '2') {
         const { errlog: { code: rawCode, desc: detailsDesc } = {} } = details || {};
@@ -455,17 +556,27 @@ class PrimusCoreTLS {
             desc: '',
           },
         });
-        return Promise.reject(
-          new ZkAttestationError(
-            resolvedCode as AttestationErrorCode,
-            '',
-            res,
-            resolvedSubCode
-          )
+        const algorithmError = new ZkAttestationError(
+          resolvedCode as AttestationErrorCode,
+          '',
+          res,
+          resolvedSubCode
         );
+        await this._emitProgressIfNeeded(startOptions, {
+          type: 'error',
+          requestId: currentRequestId,
+          error: algorithmError,
+        });
+        return Promise.reject(algorithmError);
       }
     } catch (e: any) {
       if (e?.code === 'timeout') {
+        const timeoutError = new ZkAttestationError('00002', '', e.data);
+        await this._emitProgressIfNeeded(startOptions, {
+          type: 'error',
+          requestId: currentRequestId,
+          error: timeoutError,
+        });
         this.reportEventIfNeeded({
           ...eventReportBaseParams,
           status: "FAILED",
@@ -477,13 +588,86 @@ class PrimusCoreTLS {
             getAttestationResultRes: JSON.stringify(e.data)
           }
         })
-        return Promise.reject(new ZkAttestationError('00002', '', e.data))
+        return Promise.reject(timeoutError)
       } else {
         return Promise.reject(e)
       }
     } finally {
       // Always clear the attestation flag when done
-      this._isAttesting = false;
+      if (this._concurrency <= 1) {
+        this._isAttesting = false;
+      }
+    }
+  }
+
+  private _resolveStartAttestationOptions(
+    timeoutOrOptions: number | StartAttestationOptions,
+    positionalAlgoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
+  ): Required<Omit<StartAttestationOptions, 'algoUrls' | 'onProgress'>> &
+    Pick<StartAttestationOptions, 'algoUrls' | 'onProgress'> {
+    if (typeof timeoutOrOptions === 'number') {
+      return {
+        timeout: timeoutOrOptions,
+        algoUrls: positionalAlgoUrls,
+        stream: false,
+        pollIntervalMs: 500,
+        abortOnProgressError: false,
+      };
+    }
+    return {
+      timeout: timeoutOrOptions.timeout ?? 2 * 60 * 1000,
+      algoUrls: timeoutOrOptions.algoUrls,
+      stream: timeoutOrOptions.stream ?? false,
+      pollIntervalMs: timeoutOrOptions.pollIntervalMs ?? 500,
+      onProgress: timeoutOrOptions.onProgress,
+      abortOnProgressError: timeoutOrOptions.abortOnProgressError ?? false,
+    };
+  }
+
+  private _normalizeAlgorithmPoolResult(result: unknown): { phase: 'start' | 'result'; result: any } {
+    const maybePhasedResult = result as { phase?: unknown; result?: unknown };
+    if (maybePhasedResult?.phase === 'start' || maybePhasedResult?.phase === 'result') {
+      return maybePhasedResult as { phase: 'start' | 'result'; result: any };
+    }
+    return {
+      phase: 'result',
+      result,
+    };
+  }
+
+  private async _handleAlgorithmProgress(
+    result: unknown,
+    requestId: string,
+    options: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
+  ): Promise<void> {
+    const raw = result as { retcode?: string; requestid?: string; content?: { sequence?: number; data?: unknown } };
+    if (raw?.retcode !== '1') {
+      return;
+    }
+    if (raw.content?.data === undefined) {
+      return;
+    }
+    await this._emitProgressIfNeeded(options, {
+      type: 'stream-data',
+      requestId: raw.requestid || requestId,
+      sequence: raw.content?.sequence,
+      data: raw.content?.data,
+    });
+  }
+
+  private async _emitProgressIfNeeded(
+    options: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>,
+    event: AttestationProgressEvent
+  ): Promise<void> {
+    if (!options.stream || !options.onProgress) {
+      return;
+    }
+    try {
+      await options.onProgress(event);
+    } catch (error) {
+      if (options.abortOnProgressError) {
+        throw error;
+      }
     }
   }
 
@@ -559,4 +743,9 @@ class PrimusCoreTLS {
 }
 
 export { PrimusCoreTLS, Attestation };
-export type { StartAttestationInput } from './index.d';
+export type {
+  AttestationProgressEvent,
+  PrimusInitOptions,
+  StartAttestationInput,
+  StartAttestationOptions,
+} from './index.d';

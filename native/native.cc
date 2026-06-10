@@ -1,6 +1,9 @@
+#include <condition_variable>
+#include <functional>
 #include <iostream>
 #include <napi.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string>
 
 extern "C" {
@@ -8,6 +11,122 @@ const char *callAlgorithm(const char *input);
 }
 std::string __callAlgorithm(const std::string &input) {
   return std::string(callAlgorithm(input.c_str()));
+}
+
+using RpcCallback = std::function<char *(const char *)>;
+using StreamCallback = std::function<void(const uint8_t *, uint32_t)>;
+extern "C" {
+void register_rpc_callback(RpcCallback cb);
+void register_stream_callback(StreamCallback cb);
+void unregister_rpc_callback();
+void unregister_stream_callback();
+}
+
+Napi::ThreadSafeFunction rpc_tsfn;
+Napi::ThreadSafeFunction stream_tsfn;
+
+// JS -> register RPC callback
+Napi::Value setRpcHandler(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  if (info.Length() == 0 || info[0].IsNull() || info[0].IsUndefined()) {
+    unregister_rpc_callback();
+    if (rpc_tsfn) {
+      rpc_tsfn.Release();
+      rpc_tsfn = nullptr;
+    }
+
+    return env.Undefined();
+  }
+
+  if (!info[0].IsFunction()) {
+    Napi::TypeError::New(env, "Expected function or null.")
+        .ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  Napi::Function js_cb = info[0].As<Napi::Function>();
+
+  rpc_tsfn = Napi::ThreadSafeFunction::New(env, js_cb, "RPC Callback", 0, 1);
+  register_rpc_callback([](const char *msg) -> char * {
+    if (!rpc_tsfn)
+      return nullptr;
+
+    std::string _msg(msg);
+    struct Context {
+      std::mutex m;
+      std::condition_variable cv;
+      std::string ret;
+      bool done = false;
+    };
+
+    Context ctx;
+
+    rpc_tsfn.BlockingCall([&ctx, _msg](Napi::Env env, Napi::Function js_cb) {
+      Napi::String res =
+          js_cb.Call({Napi::String::New(env, _msg)}).As<Napi::String>();
+
+      {
+        std::lock_guard<std::mutex> lock(ctx.m);
+        ctx.ret = res.Utf8Value();
+        ctx.done = true;
+      }
+
+      ctx.cv.notify_one();
+    });
+    std::unique_lock<std::mutex> lock(ctx.m);
+    ctx.cv.wait(lock, [&] { return ctx.done; });
+
+    size_t size = ctx.ret.size();
+    char *cstr = (char *)malloc(size + 1);
+    std::memcpy(cstr, ctx.ret.c_str(), size);
+    cstr[size] = '\0';
+
+    return cstr;
+  });
+
+  return env.Undefined();
+}
+
+// // JS -> register Stream callback
+Napi::Value setStreamHandler(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  if (info.Length() == 0 || info[0].IsNull() || info[0].IsUndefined()) {
+    unregister_stream_callback();
+    if (stream_tsfn) {
+      stream_tsfn.Release();
+      stream_tsfn = nullptr;
+    }
+
+    return env.Undefined();
+  }
+
+  if (!info[0].IsFunction()) {
+    Napi::TypeError::New(env, "Expected function or null.")
+        .ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  Napi::Function js_cb = info[0].As<Napi::Function>();
+
+  stream_tsfn =
+      Napi::ThreadSafeFunction::New(env, js_cb, "Stream Callback", 0, 1);
+
+  register_stream_callback([](const uint8_t *data, uint32_t len) {
+    if (!stream_tsfn)
+      return;
+
+    std::vector<uint8_t> _data(data, data + len);
+    stream_tsfn.BlockingCall(
+        [_data = std::move(_data)](Napi::Env env, Napi::Function js_cb) {
+          Napi::Buffer<uint8_t> buf =
+              Napi::Buffer<uint8_t>::Copy(env, _data.data(), _data.size());
+          js_cb.Call({buf});
+        });
+  });
+
+  return env.Undefined();
 }
 
 Napi::String CallAlgorithmWrapped(const Napi::CallbackInfo &info) {
@@ -26,6 +145,8 @@ Napi::String CallAlgorithmWrapped(const Napi::CallbackInfo &info) {
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
+  exports.Set("setRpcHandler", Napi::Function::New(env, setRpcHandler));
+  exports.Set("setStreamHandler", Napi::Function::New(env, setStreamHandler));
   exports.Set(Napi::String::New(env, "callAlgorithm"),
               Napi::Function::New(env, CallAlgorithmWrapped));
   return exports;

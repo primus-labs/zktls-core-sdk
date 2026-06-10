@@ -41,9 +41,8 @@ function dataForJsonExport(stored: unknown): string {
   return JSON.stringify(stored);
 }
 
-export class ZkAttestationError {
+export class ZkAttestationError extends Error {
   code: ErrorCode;
-  message: string;
   /** HTTP-style or domain sub-code when present. */
   subCode?: string;
   data?: any;
@@ -53,11 +52,14 @@ export class ZkAttestationError {
    * @param subCode - Optional sub-code used for composite `code:subCode` message lookup.
    */
   constructor(code: ErrorCode, message?: string, data?: any, subCode?: string) {
-    this.subCode = subCode;
-    this.message =
+    const resolvedMessage =
       resolveZkAttestationErrorMessage(code, message, subCode) ||
       errorCodeLookup['99999'] ||
       '';
+    super(resolvedMessage);
+    this.name = 'ZkAttestationError';
+    Object.setPrototypeOf(this, ZkAttestationError.prototype);
+    this.subCode = subCode;
     this.code = code;
     this.data = data;
   }
