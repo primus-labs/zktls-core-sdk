@@ -468,6 +468,9 @@ class PrimusCoreTLS {
             code: errorCode,
             desc: ""
           },
+          ext: {
+            getAttestationRes: JSON.stringify(getAttestationRes)
+          }
         })
         const startError = new ZkAttestationError(errorCode);
         await this._emitProgressIfNeeded(startOptions, {
@@ -523,6 +526,9 @@ class PrimusCoreTLS {
               code: errorCode,
               desc: ""
             },
+            ext: {
+              getAttestationResultRes: JSON.stringify(res)
+            }
           })
 
           const proofError = new ZkAttestationError(errorCode as AttestationErrorCode, '', res);
@@ -555,6 +561,9 @@ class PrimusCoreTLS {
             code: reportCode,
             desc: '',
           },
+          ext: {
+            getAttestationResultRes: JSON.stringify(res)
+          }
         });
         const algorithmError = new ZkAttestationError(
           resolvedCode as AttestationErrorCode,
