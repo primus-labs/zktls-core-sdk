@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest } from './index.d';
+import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, StartAttestationOptions } from './index.d';
 import { AlgorithmUrls } from './classes/AlgorithmUrls';
 
 interface AttConditionItem {
@@ -7,7 +7,9 @@ interface AttConditionItem {
     op: string;
     value: string;
 }
-export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUrls) {
+type AssemblyOptions = Pick<Required<StartAttestationOptions>, 'proveLargeData' | 'offlineTimeout'>;
+
+export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUrls, options: AssemblyOptions) {
     let { primusMpcUrl, primusProxyUrl, proxyUrl } = algorithmUrls
     let padoUrl = primusProxyUrl;
     let modelType = "proxytls";
@@ -52,8 +54,10 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
         padoExtensionVersion: "0.3.21",
         cipher: sslCipher,
         requestIntervalMs: String(requestInterval),
+        proveLargeData: String(options.proveLargeData),
+        offlineTimeout: String(options.offlineTimeout),
     };
-    // console.log('attestationParams====', attestationParams.responses[0].conditions);
+    // console.log('attestationParams====', JSON.stringify(attestationParams));
     return attestationParams;
 }
 

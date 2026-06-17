@@ -13,3 +13,5 @@ build
 
 
 sync-client-plugin.sh
+
+*.code-workspace

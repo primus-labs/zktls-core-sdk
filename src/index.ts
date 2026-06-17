@@ -432,7 +432,7 @@ class PrimusCoreTLS {
 
       console.log('signedAttRequest====', JSON.stringify(signedAttRequest));
       const attParams = {
-        ...assemblyParams(signedAttRequest, effectiveAlgoUrls),
+        ...assemblyParams(signedAttRequest, effectiveAlgoUrls, startOptions),
         stream: startOptions.stream,
       };
       currentRequestId = attParams.requestid;
@@ -619,6 +619,8 @@ class PrimusCoreTLS {
         timeout: timeoutOrOptions,
         algoUrls: positionalAlgoUrls,
         stream: false,
+        proveLargeData: false,
+        offlineTimeout: 60000,
         pollIntervalMs: 500,
         abortOnProgressError: false,
       };
@@ -627,6 +629,8 @@ class PrimusCoreTLS {
       timeout: timeoutOrOptions.timeout ?? 2 * 60 * 1000,
       algoUrls: timeoutOrOptions.algoUrls,
       stream: timeoutOrOptions.stream ?? false,
+      proveLargeData: timeoutOrOptions.proveLargeData ?? false,
+      offlineTimeout: timeoutOrOptions.offlineTimeout ?? 60000,
       pollIntervalMs: timeoutOrOptions.pollIntervalMs ?? 500,
       onProgress: timeoutOrOptions.onProgress,
       abortOnProgressError: timeoutOrOptions.abortOnProgressError ?? false,

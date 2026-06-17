@@ -88,6 +88,8 @@ export type StartAttestationOptions = {
     timeout?: number;
     algoUrls?: Pick<import('./classes/AlgorithmUrls').AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>;
     stream?: boolean;
+    proveLargeData?: boolean;
+    offlineTimeout?: number;
     pollIntervalMs?: number;
     onProgress?: (event: AttestationProgressEvent) => void | Promise<void>;
     abortOnProgressError?: boolean;
