@@ -4,7 +4,9 @@ import { PrimusCoreTLS } from '../src/index';
 import type { AttRequest } from '../src/classes/AttRequest';
 import type { AttestationProgressEvent } from '../src/index.d';
 
-const STREAM_TIMEOUT_MS = 10 * 60 * 1000;
+// Adjust these values for the target API size and network conditions.
+const STREAM_TIMEOUT_MS = 20 * 60 * 1000;
+const OFFLINE_TIMEOUT_MS = 10 * 60 * 1000;
 const TEST_API_STREAM_URL = 'https://api-dev.padolabs.org/test-body/body?rspSize=128b&stream=true';
 
 const requireEnv = (name: string) => {
@@ -179,6 +181,8 @@ describe('backend signed test API stream attestation', () => {
       const attestation = await client.startAttestation(signedRequestStr, {
         timeout: STREAM_TIMEOUT_MS,
         stream: true,
+        proveLargeData: true,
+        offlineTimeout: OFFLINE_TIMEOUT_MS,
         onProgress: (event) => {
           console.log('backend signed test api stream onProgress event=', stringifyStreamLog(event));
           if (event.type === 'stream-data') {

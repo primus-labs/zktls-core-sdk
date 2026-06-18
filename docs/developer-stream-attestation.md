@@ -53,9 +53,15 @@ The input can be either:
 For stream mode, pass options with `stream: true` and `onProgress`.
 
 ```ts
+// Adjust these values for the target API size and network conditions.
+const ATTESTATION_TIMEOUT_MS = 20 * 60 * 1000;
+const OFFLINE_TIMEOUT_MS = 10 * 60 * 1000;
+
 const attestation = await client.startAttestation(signedRequestStr, {
-  timeout: 10 * 60 * 1000,
+  timeout: ATTESTATION_TIMEOUT_MS,
   stream: true,
+  proveLargeData: true,
+  offlineTimeout: OFFLINE_TIMEOUT_MS,
   onProgress: (event) => {
     if (event.type === 'stream-data') {
       console.log(event.requestId, event.sequence, event.data);
@@ -66,6 +72,15 @@ const attestation = await client.startAttestation(signedRequestStr, {
 
 The returned value is still the final attestation proof. Stream data is delivered
 through `onProgress` before the final proof resolves.
+
+Key options:
+
+- `timeout`: overall attestation timeout. The examples use 20 minutes; adjust it
+  for the target API size and network conditions.
+- `proveLargeData`: enables proving large response data. Use `true` when the
+  request and response body can be large.
+- `offlineTimeout`: plaintext request timeout. The examples use 10 minutes;
+  adjust it for the target API and expected response latency.
 
 ## Progress Events
 
@@ -121,8 +136,11 @@ attRequest.setAttMode({
 const signedRequestStr = await getBackendSignedRequest(attRequest);
 
 const attestation = await client.startAttestation(signedRequestStr, {
-  timeout: 10 * 60 * 1000,
+  // Adjust these values for the target API size and network conditions.
+  timeout: 20 * 60 * 1000,
   stream: true,
+  proveLargeData: true,
+  offlineTimeout: 10 * 60 * 1000,
   onProgress: (event) => {
     if (event.type === 'stream-data') {
       console.log('stream data:', event.data);
@@ -171,8 +189,11 @@ const eventsByRequest = signedRequestStrs.map(() => [] as AttestationProgressEve
 const attestations = await Promise.all(
   signedRequestStrs.map((signedRequestStr, index) =>
     client.startAttestation(signedRequestStr, {
-      timeout: 10 * 60 * 1000,
+      // Adjust these values for the target API size and network conditions.
+      timeout: 20 * 60 * 1000,
       stream: true,
+      proveLargeData: true,
+      offlineTimeout: 10 * 60 * 1000,
       onProgress: (event) => {
         eventsByRequest[index].push(event);
       },
@@ -206,25 +227,12 @@ try {
 
 ## Running The Integration Tests
 
-Both tests are skipped by default. Set one of these flags to run them:
-
-```sh
-ZKTLS_BACKEND_SIGN_STREAM_INTEGRATION=true
-```
-
-or:
-
-```sh
-ZKTLS_STREAM_INTEGRATION=true
-```
 
 Required environment variables:
 
 ```sh
 ZKTLS_APP_ID=...
 ZKTLS_APP_SECRET=...
-OPENAI_API_KEY=...
-OPENAI_API_URL=https://api.openai.com/v1/chat/completions
 ```
 
 Run the tests:
