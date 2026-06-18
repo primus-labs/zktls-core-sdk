@@ -4,42 +4,24 @@ import type { AttestationProgressEvent } from '../src/index.d';
 const STREAM_TIMEOUT_MS = 10 * 60 * 1000;
 const STREAM_CONCURRENCY = 2;
 const STREAM_REQUEST_COUNT = 2;
-const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini';
-const shouldRunStreamIntegration = process.env.ZKTLS_STREAM_INTEGRATION === 'true';
-const describeStreamIntegration = shouldRunStreamIntegration ? describe : describe.skip;
+const TEST_API_STREAM_URL = 'https://api-dev.padolabs.org/test-body/body?rspSize=128b&stream=true';
 
 const requireEnv = (name: string) => {
   const value = process.env[name];
   if (!value?.trim()) {
-    throw new Error(`${name} must be set in .env when ZKTLS_STREAM_INTEGRATION=true`);
+    throw new Error(`${name} must be set in .env`);
   }
   return value.trim();
 };
 
-const requireOpenAIStreamUrl = () => {
-  const value = requireEnv('OPENAI_API_URL');
-  const url = new URL(value);
-  if (url.protocol !== 'https:') {
-    throw new Error('OPENAI_API_URL must use https for zkTLS stream integration tests');
-  }
-  if (!url.pathname.endsWith('/chat/completions')) {
-    throw new Error('OPENAI_API_URL must be the full chat completions endpoint, e.g. /v1/chat/completions');
-  }
-  return value;
-};
-
-const buildOpenAIStreamAttRequest = (client: PrimusCoreTLS, index: number) => {
-  const openAIUrl = requireOpenAIStreamUrl();
-  const openAIKey = requireEnv('OPENAI_API_KEY');
-  const model = process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
+const buildTestApiStreamAttRequest = (client: PrimusCoreTLS, index: number) => {
+  const model = 'gpt-5.4-mini';
 
   const attRequest = client.generateRequestParams(
     {
-      url: openAIUrl,
+      url: TEST_API_STREAM_URL,
       method: 'POST',
       header: {
-        Accept: 'text/event-stream',
-        Authorization: `Bearer ${openAIKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -56,7 +38,7 @@ const buildOpenAIStreamAttRequest = (client: PrimusCoreTLS, index: number) => {
     },
     [
       {
-        keyName: 'openai_stream',
+        keyName: 'test_api_stream',
         parseType: 'json',
         parsePath: '$',
       },
@@ -87,7 +69,7 @@ const expectConcurrentStreamEvents = (events: AttestationProgressEvent[], reques
   }
 };
 
-describeStreamIntegration('real concurrent OpenAI stream attestation', () => {
+describe('real concurrent test API stream attestation', () => {
   jest.setTimeout(STREAM_TIMEOUT_MS * Math.max(2, STREAM_REQUEST_COUNT));
 
   const appId = process.env.ZKTLS_APP_ID;
@@ -96,8 +78,6 @@ describeStreamIntegration('real concurrent OpenAI stream attestation', () => {
   beforeAll(() => {
     requireEnv('ZKTLS_APP_ID');
     requireEnv('ZKTLS_APP_SECRET');
-    requireEnv('OPENAI_API_KEY');
-    requireOpenAIStreamUrl();
   });
 
   it(`routes ${STREAM_REQUEST_COUNT} concurrent stream attestations through their own onProgress callbacks`, async () => {
@@ -109,7 +89,7 @@ describeStreamIntegration('real concurrent OpenAI stream attestation', () => {
 
     const eventsByRequest = Array.from({ length: STREAM_REQUEST_COUNT }, () => [] as AttestationProgressEvent[]);
     const attRequests = Array.from({ length: STREAM_REQUEST_COUNT }, (_, index) =>
-      buildOpenAIStreamAttRequest(client, index)
+      buildTestApiStreamAttRequest(client, index)
     );
 
     try {
@@ -119,10 +99,10 @@ describeStreamIntegration('real concurrent OpenAI stream attestation', () => {
             timeout: STREAM_TIMEOUT_MS,
             stream: true,
             onProgress: (event) => {
-              console.log(`openai concurrent stream ${index} onProgress event=`, stringifyStreamLog(event));
+              console.log(`test api concurrent stream ${index} onProgress event=`, stringifyStreamLog(event));
               if (event.type === 'stream-data') {
                 console.log(
-                  `openai concurrent stream ${index} onProgress string=`,
+                  `test api concurrent stream ${index} onProgress string=`,
                   Buffer.from(event.data as Uint8Array).toString('utf8')
                 );
               }
@@ -133,7 +113,7 @@ describeStreamIntegration('real concurrent OpenAI stream attestation', () => {
       );
 
       // console.log(
-      //   'openai concurrent stream progress events=',
+      //   'test api concurrent stream progress events=',
       //   stringifyStreamLog(
       //     eventsByRequest.map((events, index) => ({
       //       index,
@@ -142,7 +122,7 @@ describeStreamIntegration('real concurrent OpenAI stream attestation', () => {
       //     }))
       //   )
       // );
-      console.log('openai concurrent stream attestations=', JSON.stringify(attestations, null, 2));
+      console.log('test api concurrent stream attestations=', JSON.stringify(attestations, null, 2));
 
       expect(attestations).toHaveLength(STREAM_REQUEST_COUNT);
       attestations.forEach((attestation) => {

@@ -2,30 +2,23 @@ import { PrimusCoreTLS } from '../src/index';
 import type { AttestationProgressEvent } from '../src/index.d';
 
 const STREAM_TIMEOUT_MS = 10 * 60 * 1000;
-const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini';
-const shouldRunStreamIntegration = process.env.ZKTLS_STREAM_INTEGRATION === 'true';
-const describeStreamIntegration = shouldRunStreamIntegration ? describe : describe.skip;
 
 const requireEnv = (name: string) => {
   const value = process.env[name];
   if (!value?.trim()) {
-    throw new Error(`${name} must be set in .env when ZKTLS_STREAM_INTEGRATION=true`);
+    throw new Error(`${name} must be set in .env`);
   }
   return value.trim();
 };
 
-const buildOpenAIStreamAttRequest = (client: PrimusCoreTLS) => {
-  const openAIUrl = requireEnv('OPENAI_API_URL');
-  const openAIKey = requireEnv('OPENAI_API_KEY');
-  const model = process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
+const buildTestApiStreamAttRequest = (client: PrimusCoreTLS) => {
+  const model = "gpt-5.4-mini";
 
   const attRequest = client.generateRequestParams(
     {
-      url: openAIUrl,
+      url: "https://api-dev.padolabs.org/test-body/body?rspSize=128b&stream=true",
       method: 'POST',
       header: {
-        Accept: 'text/event-stream',
-        Authorization: `Bearer ${openAIKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -42,7 +35,7 @@ const buildOpenAIStreamAttRequest = (client: PrimusCoreTLS) => {
     },
     [
       {
-        keyName: 'openai_stream',
+        keyName: 'test_api_stream',
         parseType: 'json',
         parsePath: '$',
       },
@@ -70,7 +63,7 @@ const expectStreamEvents = (events: AttestationProgressEvent[]) => {
   expect(events.some((event) => event.type === 'proof-ready')).toBe(true);
 };
 
-describeStreamIntegration('real OpenAI stream attestation', () => {
+describe('real test API stream attestation', () => {
   jest.setTimeout(STREAM_TIMEOUT_MS);
 
   const appId = process.env.ZKTLS_APP_ID;
@@ -79,11 +72,9 @@ describeStreamIntegration('real OpenAI stream attestation', () => {
   beforeAll(() => {
     requireEnv('ZKTLS_APP_ID');
     requireEnv('ZKTLS_APP_SECRET');
-    requireEnv('OPENAI_API_KEY');
-    requireEnv('OPENAI_API_URL');
   });
 
-  it('emits stream-data from OpenAI streaming API and resolves the final proof', async () => {
+  it('emits stream-data from the test streaming API and resolves the final proof', async () => {
     const client = new PrimusCoreTLS();
     await client.init(appId!, appSecret!, {
       backend: 'auto',
@@ -92,25 +83,25 @@ describeStreamIntegration('real OpenAI stream attestation', () => {
 
     const events: AttestationProgressEvent[] = [];
     try {
-      const attestation = await client.startAttestation(buildOpenAIStreamAttRequest(client), {
+      const attestation = await client.startAttestation(buildTestApiStreamAttRequest(client), {
         timeout: STREAM_TIMEOUT_MS,
         stream: true,
         onProgress: (event) => {
-          console.log('openai stream onProgress event=', stringifyStreamLog(event));
+          console.log('test api stream onProgress event=', stringifyStreamLog(event));
           if (event.type === 'stream-data') {
-            console.log('openai stream onProgress string=', Buffer.from(event.data as Uint8Array).toString('utf8'));
+            console.log('test api stream onProgress string=', Buffer.from(event.data as Uint8Array).toString('utf8'));
           }
           events.push(event);
         },
       });
 
-      console.log('openai stream attestation=', JSON.stringify(attestation, null, 2));
+      console.log('test api stream attestation=', JSON.stringify(attestation, null, 2));
       expectStreamEvents(events);
       expect(attestation).toBeTruthy();
       expect(attestation.signatures?.length).toBeGreaterThan(0);
       expect(client.verifyAttestation(attestation)).toBe(true);
     } finally {
-      // console.log('openai stream progress events=', stringifyStreamLog(events));
+      // console.log('test api stream progress events=', stringifyStreamLog(events));
       await client.close();
     }
   });

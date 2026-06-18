@@ -7,32 +7,14 @@ import type { AttestationProgressEvent } from '../src/index.d';
 const STREAM_TIMEOUT_MS = 10 * 60 * 1000;
 const STREAM_CONCURRENCY = 2;
 const STREAM_REQUEST_COUNT = 2;
-const DEFAULT_OPENAI_MODEL = 'gpt-5.4-mini';
-const shouldRunBackendSignStreamIntegration =
-  process.env.ZKTLS_BACKEND_SIGN_STREAM_INTEGRATION === 'true' ||
-  process.env.ZKTLS_STREAM_INTEGRATION === 'true';
-const describeBackendSignStreamIntegration = shouldRunBackendSignStreamIntegration ? describe : describe.skip;
+const TEST_API_STREAM_URL = 'https://api-dev.padolabs.org/test-body/body?rspSize=128b&stream=true';
 
 const requireEnv = (name: string) => {
   const value = process.env[name];
   if (!value?.trim()) {
-    throw new Error(
-      `${name} must be set in .env when ZKTLS_BACKEND_SIGN_STREAM_INTEGRATION=true or ZKTLS_STREAM_INTEGRATION=true`
-    );
+    throw new Error(`${name} must be set in .env`);
   }
   return value.trim();
-};
-
-const requireOpenAIStreamUrl = () => {
-  const value = requireEnv('OPENAI_API_URL');
-  const url = new URL(value);
-  if (url.protocol !== 'https:') {
-    throw new Error('OPENAI_API_URL must use https for zkTLS stream integration tests');
-  }
-  if (!url.pathname.endsWith('/chat/completions')) {
-    throw new Error('OPENAI_API_URL must be the full chat completions endpoint, e.g. /v1/chat/completions');
-  }
-  return value;
 };
 
 const readBody = (req: IncomingMessage): Promise<string> => {
@@ -70,18 +52,14 @@ const close = (server: Server): Promise<void> => {
   });
 };
 
-const buildOpenAIStreamAttRequest = (client: PrimusCoreTLS, index: number) => {
-  const openAIUrl = requireOpenAIStreamUrl();
-  const openAIKey = requireEnv('OPENAI_API_KEY');
-  const model = process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
+const buildTestApiStreamAttRequest = (client: PrimusCoreTLS, index: number) => {
+  const model = 'gpt-5.4-mini';
 
   const attRequest = client.generateRequestParams(
     {
-      url: openAIUrl,
+      url: TEST_API_STREAM_URL,
       method: 'POST',
       header: {
-        Accept: 'text/event-stream',
-        Authorization: `Bearer ${openAIKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -98,7 +76,7 @@ const buildOpenAIStreamAttRequest = (client: PrimusCoreTLS, index: number) => {
     },
     [
       {
-        keyName: 'openai_stream',
+        keyName: 'test_api_stream',
         parseType: 'json',
         parsePath: '$',
       },
@@ -127,7 +105,7 @@ const expectConcurrentStreamEvents = (events: AttestationProgressEvent[]) => {
   expect(new Set(events.map((event) => event.requestId)).size).toBe(1);
 };
 
-describeBackendSignStreamIntegration('backend signed concurrent OpenAI stream attestation', () => {
+describe('backend signed concurrent test API stream attestation', () => {
   jest.setTimeout(STREAM_TIMEOUT_MS * Math.max(2, STREAM_REQUEST_COUNT));
 
   const appId = process.env.ZKTLS_APP_ID;
@@ -156,8 +134,6 @@ describeBackendSignStreamIntegration('backend signed concurrent OpenAI stream at
   beforeAll(async () => {
     requireEnv('ZKTLS_APP_ID');
     requireEnv('ZKTLS_APP_SECRET');
-    requireEnv('OPENAI_API_KEY');
-    requireOpenAIStreamUrl();
 
     server = http.createServer(async (req, res) => {
       try {
@@ -204,7 +180,7 @@ describeBackendSignStreamIntegration('backend signed concurrent OpenAI stream at
     const eventsByRequest = Array.from({ length: STREAM_REQUEST_COUNT }, () => [] as AttestationProgressEvent[]);
     try {
       const attRequests = Array.from({ length: STREAM_REQUEST_COUNT }, (_, index) =>
-        buildOpenAIStreamAttRequest(client, index)
+        buildTestApiStreamAttRequest(client, index)
       );
       const signedRequestStrs = await Promise.all(attRequests.map(getBackendSignedRequest));
       const attestations = await Promise.all(
@@ -214,12 +190,12 @@ describeBackendSignStreamIntegration('backend signed concurrent OpenAI stream at
             stream: true,
             onProgress: (event) => {
               console.log(
-                `backend signed openai concurrent stream ${index} onProgress event=`,
+                `backend signed test api concurrent stream ${index} onProgress event=`,
                 stringifyStreamLog(event)
               );
               if (event.type === 'stream-data') {
                 console.log(
-                  `backend signed openai concurrent stream ${index} onProgress string=`,
+                  `backend signed test api concurrent stream ${index} onProgress string=`,
                   Buffer.from(event.data as Uint8Array).toString('utf8')
                 );
               }
@@ -229,7 +205,7 @@ describeBackendSignStreamIntegration('backend signed concurrent OpenAI stream at
         )
       );
 
-      console.log('backend signed openai concurrent stream attestations=', JSON.stringify(attestations, null, 2));
+      console.log('backend signed test api concurrent stream attestations=', JSON.stringify(attestations, null, 2));
 
       expect(attestations).toHaveLength(STREAM_REQUEST_COUNT);
       attestations.forEach((attestation) => {
