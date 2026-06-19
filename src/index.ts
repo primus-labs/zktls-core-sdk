@@ -14,7 +14,12 @@ import {
 import { AttRequest } from './classes/AttRequest'
 import { AlgorithmUrls } from "./classes/AlgorithmUrls";
 import { encodeAttestation } from "./utils";
-import { init, getAttestation, getAttestationResult, AlgorithmBackend } from "./primus_zk";
+import {
+  init,
+  getAttestation,
+  getAttestationResult,
+  AlgorithmBackend,
+} from "./primus_zk";
 import { ProcessAlgorithmPool } from './algorithm/ProcessAlgorithmPool';
 import { assemblyParams } from './assembly_params';
 import { ZkAttestationError } from './classes/Error'
@@ -78,10 +83,11 @@ class PrimusCoreTLS {
       this._algorithmPool = new ProcessAlgorithmPool({
         backend: initOptions.backend,
         concurrency: this._concurrency,
+        logLevel: initOptions.logLevel,
       });
-      return this._algorithmPool.init({ backend: initOptions.backend });
+      return this._algorithmPool.init({ backend: initOptions.backend, logLevel: initOptions.logLevel });
     }
-    return await init(initOptions.backend);
+    return await init(initOptions.backend, initOptions.logLevel);
   }
 
   async close(): Promise<void> {
@@ -96,12 +102,14 @@ class PrimusCoreTLS {
       return {
         backend: modeOrOptions,
         concurrency: 1,
+        logLevel: 'error',
       };
     }
     const concurrency = modeOrOptions.concurrency ?? 1;
     return {
       backend: modeOrOptions.backend ?? 'auto',
       concurrency: Number.isFinite(concurrency) && concurrency > 1 ? Math.floor(concurrency) : 1,
+      logLevel: modeOrOptions.logLevel ?? 'error',
     };
   }
 
@@ -762,3 +770,4 @@ export type {
   StartAttestationInput,
   StartAttestationOptions,
 } from './index.d';
+export type { AlgorithmBackend, AlgorithmLogLevel } from './primus_zk';

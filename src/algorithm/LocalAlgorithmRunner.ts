@@ -3,7 +3,7 @@ import type { AlgorithmRunner, AlgorithmRunnerInitOptions, RunAttestationOptions
 
 export class LocalAlgorithmRunner implements AlgorithmRunner {
   init(options: AlgorithmRunnerInitOptions): Promise<string | boolean> {
-    return init(options.backend);
+    return init(options.backend, options.logLevel);
   }
 
   async runAttestation(attParams: unknown, options: RunAttestationOptions): Promise<unknown> {

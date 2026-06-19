@@ -27,6 +27,7 @@ describe('ProcessAlgorithmPool', () => {
     const pool = new ProcessAlgorithmPool({
       backend: 'native',
       concurrency: 2,
+      logLevel: 'error',
       createWorker: () => {
         const worker = new FakeWorker();
         workers.push(worker);
@@ -69,11 +70,44 @@ describe('ProcessAlgorithmPool', () => {
     await pool.close();
   });
 
+  it('passes the configured log level when initializing a worker', async () => {
+    const workers: FakeWorker[] = [];
+    const pool = new ProcessAlgorithmPool({
+      backend: 'native',
+      concurrency: 2,
+      logLevel: 'info',
+      createWorker: () => {
+        const worker = new FakeWorker();
+        workers.push(worker);
+        return worker;
+      },
+    } as ConstructorParameters<typeof ProcessAlgorithmPool>[0]);
+
+    const task = pool.runAttestation({ requestid: 'first' }, { timeout: 1000, pollIntervalMs: 10 });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(workers[0].sent[0]).toEqual(
+      expect.objectContaining({
+        type: 'init',
+        backend: 'native',
+        logLevel: 'info',
+      })
+    );
+
+    const attest = workers[0].sent.find((message) => (message as { type: string }).type === 'attest') as {
+      id: string;
+    };
+    workers[0].emit('message', { id: attest.id, type: 'done', result: { retcode: '0' } });
+    await task;
+    await pool.close();
+  });
+
   it('reuses an idle worker instead of starting another one', async () => {
     const workers: FakeWorker[] = [];
     const pool = new ProcessAlgorithmPool({
       backend: 'native',
       concurrency: 3,
+      logLevel: 'error',
       createWorker: () => {
         const worker = new FakeWorker();
         workers.push(worker);

@@ -1,7 +1,7 @@
 import { fork } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import type { AlgorithmBackend } from '../primus_zk';
+import type { AlgorithmBackend, AlgorithmLogLevel } from '../primus_zk';
 import {
   deserializeError,
   type AlgorithmRunner,
@@ -30,6 +30,7 @@ type PoolWorker = {
 type ProcessAlgorithmPoolOptions = {
   backend: AlgorithmBackend;
   concurrency: number;
+  logLevel: AlgorithmLogLevel;
   workerPath?: string;
   createWorker?: () => WorkerProcess;
 };
@@ -37,6 +38,7 @@ type ProcessAlgorithmPoolOptions = {
 export class ProcessAlgorithmPool implements AlgorithmRunner {
   private readonly backend: AlgorithmBackend;
   private readonly concurrency: number;
+  private readonly logLevel: AlgorithmLogLevel;
   private readonly workerPath: string;
   private readonly createWorker?: () => WorkerProcess;
   private readonly workers: PoolWorker[] = [];
@@ -47,6 +49,7 @@ export class ProcessAlgorithmPool implements AlgorithmRunner {
   constructor(options: ProcessAlgorithmPoolOptions) {
     this.backend = options.backend;
     this.concurrency = Math.max(2, Math.floor(options.concurrency));
+    this.logLevel = options.logLevel;
     this.workerPath = options.workerPath || resolveDefaultWorkerPath();
     this.createWorker = options.createWorker;
   }
@@ -133,6 +136,7 @@ export class ProcessAlgorithmPool implements AlgorithmRunner {
         id,
         type: 'init',
         backend: this.backend,
+        logLevel: this.logLevel,
       });
     });
   }
