@@ -33,8 +33,16 @@ describe('init concurrency options', () => {
 
     await client.init('app-id', undefined, 'wasm');
 
-    expect(init).toHaveBeenCalledWith('wasm');
+    expect(init).toHaveBeenCalledWith('wasm', 'error');
     expect(ProcessAlgorithmPool).not.toHaveBeenCalled();
+  });
+
+  it('passes a configured log level to the local algorithm', async () => {
+    const client = new PrimusCoreTLS();
+
+    await client.init('app-id', undefined, { backend: 'wasm', logLevel: 'perf' });
+
+    expect(init).toHaveBeenCalledWith('wasm', 'perf');
   });
 
   it('creates a lazy process pool without initializing the local algorithm when concurrency is greater than 1', async () => {
@@ -46,6 +54,7 @@ describe('init concurrency options', () => {
     expect(ProcessAlgorithmPool).toHaveBeenCalledWith({
       backend: 'native',
       concurrency: 3,
+      logLevel: 'error',
     });
   });
 });

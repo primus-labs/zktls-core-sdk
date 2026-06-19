@@ -65,6 +65,7 @@ export type StartAttestationInput = import('./classes/AttRequest').AttRequest | 
 export type PrimusInitOptions = {
     backend?: import('./primus_zk').AlgorithmBackend;
     concurrency?: number;
+    logLevel?: import('./primus_zk').AlgorithmLogLevel;
 }
 
 export type AttestationProgressEvent =

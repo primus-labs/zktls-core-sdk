@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 global.WebSocket = require('ws');
 export type AlgorithmBackend = 'auto' | 'native' | 'wasm';
+export type AlgorithmLogLevel = 'debug' | 'info' | 'perf' | 'error';
 export type GetAttestationResultOptions = {
   timeout?: number;
   pollIntervalMs?: number;
@@ -79,10 +80,10 @@ async function initAlgorithm(mode: AlgorithmBackend = 'auto'): Promise<(params: 
 }
 
 let callAlgorithm = null;
-export const init = async (mode: AlgorithmBackend = 'auto') => {
+export const init = async (mode: AlgorithmBackend = 'auto', logLevel: AlgorithmLogLevel = 'error') => {
   callAlgorithm = await initAlgorithm(mode);
 
-  const logParams = buildAlgorithmParams('setLogLevel', { logLevel: 'error' });
+  const logParams = buildAlgorithmParams('setLogLevel', { logLevel });
   const logResult = await callAlgorithm(logParams);
 
   const params = buildAlgorithmParams('init', {});
