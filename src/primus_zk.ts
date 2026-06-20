@@ -14,7 +14,7 @@ export type GetAttestationOptions = {
 };
 let currentStreamContext: { paramsObj: any; options: GetAttestationOptions } | undefined;
 
-const ALGORITHM_VERSION = '1.4.32';
+const ALGORITHM_VERSION = '1.4.33';
 
 const buildAlgorithmParams = (method: string, params: Record<string, unknown>) =>
   JSON.stringify({ method, version: ALGORITHM_VERSION, params });
