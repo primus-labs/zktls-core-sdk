@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { PADO_ADDRESS } from '../src/config/env';
 import { PrimusCoreTLS } from '../src/index';
 import type { Attestation } from '../src/index.d';
 
@@ -20,10 +21,8 @@ describe('environment-specific attestation verification', () => {
     jest.restoreAllMocks();
   });
 
-  it('accepts an attestation signed by the test environment signer', () => {
-    jest
-      .spyOn(ethers.utils, 'recoverAddress')
-      .mockReturnValue('0xe02bd7a6c8aa401189aebb5bad755c2610940a73');
+  it('accepts an attestation signed by the configured environment signer', () => {
+    jest.spyOn(ethers.utils, 'recoverAddress').mockReturnValue(PADO_ADDRESS);
 
     const client = new PrimusCoreTLS();
     const attestation = { signatures: ['0xtest-signature'] } as Attestation;
