@@ -155,10 +155,17 @@ describeIntegration('backend sign integration flow', () => {
     const client = new PrimusCoreTLS();
     await client.init(appId);
 
-    const attRequest = buildDemoAttRequest(client);
-    const signedRequestStr = await getBackendSignedRequest(attRequest);
-    const attestation = await client.startAttestation(signedRequestStr, ATTESTATION_TIMEOUT_MS);
-    console.log('attestation=', attestation);
-    console.log('verifyAttestationRes=', client.verifyAttestation(attestation));
+    try {
+      const attRequest = buildDemoAttRequest(client);
+      const signedRequestStr = await getBackendSignedRequest(attRequest);
+      const attestation = await client.startAttestation(signedRequestStr, ATTESTATION_TIMEOUT_MS);
+      console.log('attestation=', attestation);
+
+      expect(attestation).toBeTruthy();
+      expect(attestation.signatures?.length).toBeGreaterThan(0);
+      expect(client.verifyAttestation(attestation)).toBe(true);
+    } finally {
+      await client.close();
+    }
   });
 });

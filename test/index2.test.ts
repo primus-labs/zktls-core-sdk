@@ -8,8 +8,8 @@ describe('test', () => {
         throw new Error('ZKTLS_APP_ID and ZKTLS_APP_SECRET must be set in .env');
     }
     it('generate', async () => {
+        const zkTLS = new PrimusCoreTLS();
         try {
-            const zkTLS = new PrimusCoreTLS();
             const result = await zkTLS.init(appId, appSecret);
             console.log("-------------init result=", result);
             
@@ -37,10 +37,11 @@ describe('test', () => {
             const attestation = await zkTLS.startAttestation(generateRequestParamsRes);
             console.log("attestation=", attestation);
             console.log("attestation.data=", attestation.data);
-            const verifyAttestationRes = zkTLS.verifyAttestation(attestation)
-            console.log("verifyAttestationRes=", verifyAttestationRes);
-        } catch (e) {
-            console.log('-----------generate error =',  e);
+            expect(attestation).toBeTruthy();
+            expect(attestation.signatures?.length).toBeGreaterThan(0);
+            expect(zkTLS.verifyAttestation(attestation)).toBe(true);
+        } finally {
+            await zkTLS.close();
         }
         
     });

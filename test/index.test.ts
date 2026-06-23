@@ -70,9 +70,9 @@ describe('test', () => {
 
     it('generateBatchRequestUrl', async () => {
         console.log('--------------generateBatchRequestUrl-process.env', process.env.NODE_ENV)
+        const zkTLS = new PrimusCoreTLS();
         try {
             // 1.
-            const zkTLS = new PrimusCoreTLS();
             const result = await zkTLS.init(appId, appSecret);
             console.log("-------------init result=", result);
 
@@ -135,10 +135,11 @@ describe('test', () => {
             const attestation = await zkTLS.startAttestation(generateRequestParamsRes, 10 * 60 * 1000);
             console.log("attestation=", attestation);
             console.log("attestation.data=", attestation.data);
-            const verifyAttestationRes = zkTLS.verifyAttestation(attestation)
-            console.log("verifyAttestationRes=", verifyAttestationRes);
-        } catch (e) {
-            console.log('-----------generate error =', e);
+            expect(attestation).toBeTruthy();
+            expect(attestation.signatures?.length).toBeGreaterThan(0);
+            expect(zkTLS.verifyAttestation(attestation)).toBe(true);
+        } finally {
+            await zkTLS.close();
         }
 
     });

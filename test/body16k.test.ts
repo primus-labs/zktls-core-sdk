@@ -13,41 +13,46 @@ describe(`${REQUEST_BODY_SIZE_KIB}K request body`, () => {
 
     it(`generate attestation with a ${REQUEST_BODY_SIZE_KIB} KiB POST body`, async () => {
         const zkTLS = new PrimusCoreTLS();
-        const result = await zkTLS.init(appId, appSecret);
-        console.log("-------------init result=", result);
+        try {
+            const result = await zkTLS.init(appId, appSecret);
+            console.log("-------------init result=", result);
 
-        const body = 'a'.repeat(REQUEST_BODY_SIZE_BYTES);
-        const request = {
-            url: "https://postman-echo.com/post",
-            method: "POST",
-            header: {
-                "Content-Type": "text/plain",
-            },
-            body,
-        };
+            const body = 'a'.repeat(REQUEST_BODY_SIZE_BYTES);
+            const request = {
+                url: "https://postman-echo.com/post",
+                method: "POST",
+                header: {
+                    "Content-Type": "text/plain",
+                },
+                body,
+            };
 
-        const responseResolves = [{
-            keyName: "data",
-            parseType: "json",
-            parsePath: "$.data",
-        }];
-        const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
+            const responseResolves = [{
+                keyName: "data",
+                parseType: "json",
+                parsePath: "$.data",
+            }];
+            const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
 
-        generateRequestParamsRes.setAttMode({
-            algorithmType: "proxytls",
-            resultType: "plain"
-        });
+            generateRequestParamsRes.setAttMode({
+                algorithmType: "proxytls",
+                resultType: "plain"
+            });
 
-        const attestation = await zkTLS.startAttestation(generateRequestParamsRes, 10 * 60 * 1000);
-        console.log("attestation=", attestation);
-        console.log("attestation.data=", attestation.data);
+            const attestation = await zkTLS.startAttestation(generateRequestParamsRes, 10 * 60 * 1000);
+            console.log("attestation=", attestation);
+            console.log("attestation.data=", attestation.data);
 
-        const attDataObject = JSON.parse(attestation.data);
-        expect(Buffer.byteLength(body, 'utf8')).toBe(REQUEST_BODY_SIZE_BYTES);
-        expect(attDataObject.data).toBe(body);
-        expect(Buffer.byteLength(attDataObject.data, 'utf8')).toBe(REQUEST_BODY_SIZE_BYTES);
+            const attDataObject = JSON.parse(attestation.data);
+            expect(Buffer.byteLength(body, 'utf8')).toBe(REQUEST_BODY_SIZE_BYTES);
+            expect(attDataObject.data).toBe(body);
+            expect(Buffer.byteLength(attDataObject.data, 'utf8')).toBe(REQUEST_BODY_SIZE_BYTES);
 
-        const verifyAttestationRes = zkTLS.verifyAttestation(attestation);
-        console.log("verifyAttestationRes=", verifyAttestationRes);
+            expect(attestation).toBeTruthy();
+            expect(attestation.signatures?.length).toBeGreaterThan(0);
+            expect(zkTLS.verifyAttestation(attestation)).toBe(true);
+        } finally {
+            await zkTLS.close();
+        }
     });
 });

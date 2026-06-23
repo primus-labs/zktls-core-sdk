@@ -1,0 +1,33 @@
+import { ethers } from 'ethers';
+import { PrimusCoreTLS } from '../src/index';
+import type { Attestation } from '../src/index.d';
+
+jest.mock('../src/utils', () => ({
+  ...jest.requireActual('../src/utils'),
+  encodeAttestation: jest.fn().mockReturnValue(`0x${'00'.repeat(32)}`),
+}));
+
+jest.mock('../src/classes/AlgorithmUrls', () => ({
+  AlgorithmUrls: jest.fn().mockImplementation(() => ({
+    primusMpcUrl: 'wss://example.com/algorithm',
+    primusProxyUrl: 'wss://example.com/algorithm-proxy',
+    proxyUrl: 'wss://example.com/algoproxy',
+  })),
+}));
+
+describe('environment-specific attestation verification', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('accepts an attestation signed by the test environment signer', () => {
+    jest
+      .spyOn(ethers.utils, 'recoverAddress')
+      .mockReturnValue('0xe02bd7a6c8aa401189aebb5bad755c2610940a73');
+
+    const client = new PrimusCoreTLS();
+    const attestation = { signatures: ['0xtest-signature'] } as Attestation;
+
+    expect(client.verifyAttestation(attestation)).toBe(true);
+  });
+});

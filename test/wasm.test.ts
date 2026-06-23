@@ -13,22 +13,19 @@ describe('test', () => {
         const zkTLS = new PrimusCoreTLS();
         try {
             // 1.
-            const result = await zkTLS.init(appId, appSecret);
+            const result = await zkTLS.init(appId, appSecret, {
+                logLevel: 'debug',
+                backend: 'wasm'});
             console.log("-------------init result=", result);
 
             let request = [
                 {
-                    url: "https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USD",
+                    url: "https://edith.xiaohongshu.com/api/sns/web/v1/system/config",
                     method: "GET",
                     header: {},
                     body: "",
                 },
-                {
-                    url: "https://www.okx.com/api/v5/public/time",
-                    method: "GET",
-                    header: {},
-                    body: "",
-                }
+
             ];
 
             const responseResolves = [
@@ -36,46 +33,16 @@ describe('test', () => {
                     {
                         keyName: "instType",
                         parseType: "json",
-                        parsePath: "$.data[0].instType"
+                        parsePath: "$.code"
                     }
                 ],
-                [
-                    {
-                        keyName: "time",
-                        parseType: "json",
-                        parsePath: "$.data[0].ts",
-                    }
-                ]
             ];
-
-            
             const generateRequestParamsRes = zkTLS.generateRequestParams(request, responseResolves);
-
-            // const attConditions = [
-            //     [{ field: 'instType', op: 'STREQ', value: 'SPOT' }],
-            //     [{ field: 'time', op: 'STRNEQ', value: '1716835200' }],
-            //   ];
-            // generateRequestParamsRes.setAttConditions(attConditions);
-
             generateRequestParamsRes.setAttMode({
                 algorithmType: "proxytls",
                 resultType: "plain"
             });
-            // generateRequestParamsRes.setNoProxy(false);
-
-            // Set the request interval to 1000 milliseconds (1 second)
-            // generateRequestParamsRes.setRequestInterval(1000);
-
-            // console.log("-------------generateRequestParams result=", generateRequestParamsRes);
-
-            // 3.
-            // const startAttestationRes =
-            // const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-            // await delay(800);
-            const attestation = await zkTLS.startAttestation(generateRequestParamsRes, {
-                proveLargeData: true,
-                offlineTimeout: 100000
-            });
+            const attestation = await zkTLS.startAttestation(generateRequestParamsRes, 10 * 60 * 1000);
             console.log("attestation=", attestation);
             console.log("attestation.data=", attestation.data);
             expect(attestation).toBeTruthy();
@@ -84,7 +51,6 @@ describe('test', () => {
         } finally {
             await zkTLS.close();
         }
-
     });
 
 });

@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { PADOADDRESS } from './config/constants'
+import { PADO_ADDRESS } from './config/env'
 import {
   AttNetworkRequest,
   AttNetworkResponseResolve,
@@ -710,7 +710,7 @@ class PrimusCoreTLS {
     const encodeData = encodeAttestation(attestation);
     const signature = attestation.signatures[0];
     const result = ethers.utils.recoverAddress(encodeData, signature);
-    const verifyResult = PADOADDRESS.toLowerCase() === result.toLowerCase();
+    const verifyResult = PADO_ADDRESS.toLowerCase() === result.toLowerCase();
     return verifyResult
   }
 

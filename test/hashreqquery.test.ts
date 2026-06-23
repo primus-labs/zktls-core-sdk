@@ -11,9 +11,9 @@ describe('test', () => {
 
     it('generateBatchRequestUrl', async () => {
         console.log('--------------generateBatchRequestUrl-process.env', process.env.NODE_ENV)
+        const zkTLS = new PrimusCoreTLS();
         try {
             // 1.
-            const zkTLS = new PrimusCoreTLS();
             const result = await zkTLS.init(appId, appSecret);
             console.log("-------------init result=", result);
 
@@ -48,8 +48,9 @@ describe('test', () => {
             // Start the zkTLS flow and verify the attestation.
             const attestation = await zkTLS.startAttestation(generateRequestParamsRes, 10 * 60 * 1000);
             console.log("attestation=", attestation);
-            const verifyAttestationRes = zkTLS.verifyAttestation(attestation)
-            console.log("verifyAttestationRes=", verifyAttestationRes);
+            expect(attestation).toBeTruthy();
+            expect(attestation.signatures?.length).toBeGreaterThan(0);
+            expect(zkTLS.verifyAttestation(attestation)).toBe(true);
 
 
             // Recompute the salted request hash from private data and verify it matches the attested query hash.
@@ -64,8 +65,8 @@ describe('test', () => {
             const attDataObject = JSON.parse(attestation.data);
             const attReqQueryHash = attDataObject["instType"];
             expect(reqHash).toBe(attReqQueryHash);
-        } catch (e) {
-            console.log('-----------generate error =', e);
+        } finally {
+            await zkTLS.close();
         }
     });
 });
