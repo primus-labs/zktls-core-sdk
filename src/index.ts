@@ -73,6 +73,7 @@ class PrimusCoreTLS {
   ): Promise<string | boolean> {
     this.appId = appId
     this.appSecret = appSecret?.trim() ? appSecret : undefined
+    await this.algoUrls.fetchNodes();
     const initOptions = this._resolveInitOptions(modeOrOptions);
     this._concurrency = initOptions.concurrency;
     if (this._algorithmPool) {

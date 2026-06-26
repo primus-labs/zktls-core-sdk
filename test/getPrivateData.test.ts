@@ -12,6 +12,7 @@ jest.mock('../src/classes/AlgorithmUrls', () => ({
     primusMpcUrl: 'wss://example.com/algorithm',
     primusProxyUrl: 'wss://example.com/algorithm-proxy',
     proxyUrl: 'wss://example.com/algoproxy',
+    fetchNodes: jest.fn().mockResolvedValue(true),
   })),
 }));
 
