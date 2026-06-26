@@ -37,15 +37,8 @@ export type AttMode = {
   resultType: AttModeResultType;
 }
 
-export type BaseAttestationParams = {
-    appId: string;
-    request: AttNetworkRequest | AttNetworkRequest[];
-    responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][];
-    userAddress: string;
-}
-
-export type FullAttestationParams = BaseAttestationParams & {
-    timestamp: number;
+export type AttRequestOptions = {
+    requestid?: string;
     attMode?: AttMode;
     attConditions?: object;
     additionParams?: string;
@@ -53,6 +46,17 @@ export type FullAttestationParams = BaseAttestationParams & {
     sslCipher?: AttSslCipher;
     noProxy?: boolean;
     requestInterval?: number;
+}
+
+export type BaseAttestationParams = {
+    appId: string;
+    request: AttNetworkRequest | AttNetworkRequest[];
+    responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][];
+    userAddress: string;
+} & AttRequestOptions
+
+export type FullAttestationParams = BaseAttestationParams & {
+    timestamp: number;
   }
 
 export type SignedAttRequest = {
@@ -61,6 +65,10 @@ export type SignedAttRequest = {
 }
 
 export type StartAttestationInput = import('./classes/AttRequest').AttRequest | string;
+
+export type GenerateRequestParamsOptions = AttRequestOptions & {
+    userAddress?: string;
+}
 
 export type PrimusInitOptions = {
     backend?: import('./primus_zk').AlgorithmBackend;

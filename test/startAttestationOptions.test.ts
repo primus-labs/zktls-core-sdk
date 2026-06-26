@@ -129,6 +129,96 @@ describe('startAttestation options', () => {
     );
   });
 
+  it('uses a user supplied requestid for attestation params', async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
+
+    (getAttestationResult as jest.Mock).mockResolvedValue(finalResult);
+
+    const attRequest = makeRequest(client);
+    attRequest.setRequestId('job-123:abc');
+    await client.startAttestation(attRequest);
+
+    expect(getAttestation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestid: 'job-123:abc',
+      }),
+      expect.any(Object)
+    );
+    expect(attRequest.requestid).toBe('job-123:abc');
+  });
+
+  it('uses requestid from a backend signed request string', async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id');
+
+    (getAttestationResult as jest.Mock).mockResolvedValue(finalResult);
+
+    const attRequest = makeRequest(client);
+    attRequest.setRequestId('backend-job-123');
+    const signedRequest = JSON.stringify({
+      attRequest: JSON.parse(attRequest.toJsonString()),
+      appSignature: '0xsignature',
+    });
+
+    await client.startAttestation(signedRequest);
+
+    expect(getAttestation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestid: 'backend-job-123',
+      }),
+      expect.any(Object)
+    );
+  });
+
+  it('generates and writes back requestid when the user does not supply one', async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
+
+    (getAttestationResult as jest.Mock).mockResolvedValue(finalResult);
+
+    const attRequest = makeRequest(client);
+    expect(attRequest.requestid).toEqual(expect.any(String));
+    await client.startAttestation(attRequest);
+
+    const [attParams] = (getAttestation as jest.Mock).mock.calls[0];
+    expect(attParams.requestid).toEqual(expect.any(String));
+    expect(attParams.requestid).toHaveLength(36);
+    expect(attRequest.requestid).toBe(attParams.requestid);
+  });
+
+  it('rejects invalid user supplied requestid', async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
+
+    const attRequest = makeRequest(client);
+    expect(() => attRequest.setRequestId('invalid request id')).toThrow(
+      expect.objectContaining({
+        code: '00005',
+      })
+    );
+    expect(getAttestation).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid requestid from a backend signed request string', async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id');
+
+    const attRequest = makeRequest(client);
+    const signedRequest = JSON.stringify({
+      attRequest: {
+        ...JSON.parse(attRequest.toJsonString()),
+        requestid: 'invalid request id',
+      },
+      appSignature: '0xsignature',
+    });
+
+    await expect(client.startAttestation(signedRequest)).rejects.toMatchObject({
+      code: '00005',
+    });
+    expect(getAttestation).not.toHaveBeenCalled();
+  });
+
   it('emits stream progress events from getAttestation stream callback', async () => {
     const client = new PrimusCoreTLS();
     await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');

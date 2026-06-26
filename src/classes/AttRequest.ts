@@ -1,5 +1,6 @@
 import type { AttMode, AttNetworkRequest, AttNetworkResponseResolve, BaseAttestationParams, AttSslCipher} from '../index.d'
 import { getInstanceProperties } from '../utils'
+import { normalizeRequestId } from '../utils/requestId'
 
 export class AttRequest {
   appId: string;
@@ -18,19 +19,41 @@ export class AttRequest {
   requestInterval?: number; // in milliseconds
 
   constructor(baseAttestationParams: BaseAttestationParams) {
-    const { appId, userAddress, request, responseResolves } = baseAttestationParams
+    const {
+      appId,
+      userAddress,
+      request,
+      responseResolves,
+      requestid,
+      attMode,
+      attConditions,
+      additionParams,
+      extendedParams,
+      sslCipher,
+      noProxy,
+      requestInterval,
+    } = baseAttestationParams
     this.appId = appId
     this.userAddress = userAddress
     this.timestamp = + new Date()
-    this.attMode = {
-      algorithmType: 'proxytls',
-      resultType: 'plain'
-    }
+    this.requestid = normalizeRequestId(requestid)
+    this.attMode = attMode
+      ? {
+        algorithmType: attMode.algorithmType,
+        resultType: attMode.resultType ?? 'plain'
+      }
+      : {
+        algorithmType: 'proxytls',
+        resultType: 'plain'
+      }
     this.request = request
     this.responseResolves = responseResolves
-    this.sslCipher = "ECDHE-RSA-AES128-GCM-SHA256";
-    this.noProxy = true;
-    this.requestInterval = -1;
+    this.attConditions = attConditions
+    this.additionParams = additionParams
+    this.extendedParams = extendedParams
+    this.sslCipher = sslCipher ?? "ECDHE-RSA-AES128-GCM-SHA256";
+    this.noProxy = noProxy ?? true;
+    this.requestInterval = requestInterval ?? -1;
   }
   setAdditionParams(additionParams: string) {
     this.additionParams = additionParams
@@ -55,6 +78,9 @@ export class AttRequest {
   }
   setRequestInterval(requestInterval: number) {
     this.requestInterval = requestInterval;
+  }
+  setRequestId(requestid: string) {
+    this.requestid = normalizeRequestId(requestid);
   }
   toJsonString() {
     return JSON.stringify(getInstanceProperties(this));

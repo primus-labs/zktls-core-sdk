@@ -1,6 +1,6 @@
-import { v4 as uuidv4 } from 'uuid';
 import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, StartAttestationOptions } from './index.d';
 import { AlgorithmUrls } from './classes/AlgorithmUrls';
+import { normalizeRequestId } from './utils/requestId';
 
 interface AttConditionItem {
     field: string;
@@ -13,10 +13,10 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
     let { primusMpcUrl, primusProxyUrl, proxyUrl } = algorithmUrls
     let padoUrl = primusProxyUrl;
     let modelType = "proxytls";
-    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams, sslCipher, noProxy, requestInterval, attConditions }, appSignature } = att
+    const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams, sslCipher, noProxy, requestInterval, attConditions, requestid: inputRequestId }, appSignature } = att
     const requestUrl = Array.isArray(request) ? request[0].url : request.url;
     let host = new URL(requestUrl).host;
-    const requestid = uuidv4();
+    const requestid = normalizeRequestId(inputRequestId);
     if (attMode?.algorithmType === "mpctls") {
         padoUrl = primusMpcUrl;
         modelType = "mpctls"

@@ -9,7 +9,8 @@ import {
   Attestation,
   PrimusInitOptions,
   StartAttestationOptions,
-  AttestationProgressEvent
+  AttestationProgressEvent,
+  GenerateRequestParamsOptions,
 } from './index.d'
 import { AttRequest } from './classes/AttRequest'
 import { AlgorithmUrls } from "./classes/AlgorithmUrls";
@@ -159,9 +160,21 @@ class PrimusCoreTLS {
     }
   }
 
-  generateRequestParams(request: AttNetworkRequest | AttNetworkRequest[],
+  generateRequestParams(
+    request: AttNetworkRequest | AttNetworkRequest[],
     responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][],
-    userAddress?: string): AttRequest {
+    userAddress?: string
+  ): AttRequest;
+  generateRequestParams(
+    request: AttNetworkRequest | AttNetworkRequest[],
+    responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][],
+    options?: GenerateRequestParamsOptions
+  ): AttRequest;
+  generateRequestParams(
+    request: AttNetworkRequest | AttNetworkRequest[],
+    responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][],
+    userAddressOrOptions?: string | GenerateRequestParamsOptions
+  ): AttRequest {
     // Validate request parameter
     if (request === undefined || request === null) {
       throw new ZkAttestationError('00005', 'Missing request parameter');
@@ -178,13 +191,19 @@ class PrimusCoreTLS {
       this._validateRequest(request);
     }
 
-    const userAddr = userAddress ? userAddress : "0x0000000000000000000000000000000000000000";
-    return new AttRequest({
+    const options: GenerateRequestParamsOptions =
+      typeof userAddressOrOptions === 'string'
+        ? { userAddress: userAddressOrOptions }
+        : userAddressOrOptions ?? {};
+    const userAddr = options.userAddress ?? '0x0000000000000000000000000000000000000000';
+    const attRequest = new AttRequest({
+      ...options,
       appId: this.appId,
       request,
       responseResolves,
-      userAddress: userAddr
-    })
+      userAddress: userAddr,
+    });
+    return attRequest;
   }
 
   async sign(signParams: string): Promise<string> {
@@ -767,6 +786,7 @@ class PrimusCoreTLS {
 export { PrimusCoreTLS, Attestation };
 export type {
   AttestationProgressEvent,
+  GenerateRequestParamsOptions,
   PrimusInitOptions,
   StartAttestationInput,
   StartAttestationOptions,
