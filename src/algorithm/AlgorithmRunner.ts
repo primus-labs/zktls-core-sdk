@@ -3,6 +3,7 @@ import type { AlgorithmBackend, AlgorithmLogLevel } from '../primus_zk';
 export type AlgorithmRunnerInitOptions = {
   backend: AlgorithmBackend;
   logLevel: AlgorithmLogLevel;
+  logLength: number;
 };
 
 export type RunAttestationOptions = {
@@ -31,6 +32,7 @@ export type ParentToChildMessage =
       type: 'init';
       backend: AlgorithmBackend;
       logLevel: AlgorithmLogLevel;
+      logLength: number;
     }
   | {
       id: string;

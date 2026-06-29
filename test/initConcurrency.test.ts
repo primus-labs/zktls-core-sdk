@@ -34,7 +34,7 @@ describe('init concurrency options', () => {
 
     await client.init('app-id', undefined, 'wasm');
 
-    expect(init).toHaveBeenCalledWith('wasm', 'error');
+    expect(init).toHaveBeenCalledWith('wasm', 'error', 2048);
     expect(ProcessAlgorithmPool).not.toHaveBeenCalled();
   });
 
@@ -43,7 +43,7 @@ describe('init concurrency options', () => {
 
     await client.init('app-id', undefined, { backend: 'wasm', logLevel: 'perf' });
 
-    expect(init).toHaveBeenCalledWith('wasm', 'perf');
+    expect(init).toHaveBeenCalledWith('wasm', 'perf', 2048);
   });
 
   it('creates a lazy process pool without initializing the local algorithm when concurrency is greater than 1', async () => {
@@ -56,6 +56,7 @@ describe('init concurrency options', () => {
       backend: 'native',
       concurrency: 3,
       logLevel: 'error',
+      logLength: 2048,
     });
   });
 });

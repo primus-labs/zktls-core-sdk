@@ -13,7 +13,11 @@ process.on('message', async (message: ParentToChildMessage) => {
   try {
     if (message.type === 'init') {
       runner = new LocalAlgorithmRunner();
-      const result = await runner.init({ backend: message.backend, logLevel: message.logLevel });
+      const result = await runner.init({
+        backend: message.backend,
+        logLevel: message.logLevel,
+        logLength: message.logLength,
+      });
       send({ id: message.id, type: 'ready', result });
       return;
     }

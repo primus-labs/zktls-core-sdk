@@ -32,6 +32,7 @@ describe('ProcessAlgorithmPool', () => {
       backend: 'native',
       concurrency: 2,
       logLevel: 'error',
+      logLength: 2048,
       createWorker: () => {
         const worker = new FakeWorker();
         workers.push(worker);
@@ -80,6 +81,7 @@ describe('ProcessAlgorithmPool', () => {
       backend: 'native',
       concurrency: 2,
       logLevel: 'info',
+      logLength: 2048,
       createWorker: () => {
         const worker = new FakeWorker();
         workers.push(worker);
@@ -112,6 +114,7 @@ describe('ProcessAlgorithmPool', () => {
       backend: 'native',
       concurrency: 3,
       logLevel: 'error',
+      logLength: 2048,
       createWorker: () => {
         const worker = new FakeWorker();
         workers.push(worker);
@@ -148,6 +151,7 @@ describe('ProcessAlgorithmPool', () => {
       backend: 'native',
       concurrency: 2,
       logLevel: 'error',
+      logLength: 2048,
       workerInitTimeoutMs: 50,
       createWorker: () => {
         const worker = new FakeWorker(false);

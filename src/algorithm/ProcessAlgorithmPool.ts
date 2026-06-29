@@ -33,6 +33,7 @@ type ProcessAlgorithmPoolOptions = {
   backend: AlgorithmBackend;
   concurrency: number;
   logLevel: AlgorithmLogLevel;
+  logLength: number;
   workerPath?: string;
   createWorker?: () => WorkerProcess;
   workerInitTimeoutMs?: number;
@@ -42,6 +43,7 @@ export class ProcessAlgorithmPool implements AlgorithmRunner {
   private readonly backend: AlgorithmBackend;
   private readonly concurrency: number;
   private readonly logLevel: AlgorithmLogLevel;
+  private readonly logLength: number;
   private readonly workerPath: string;
   private readonly createWorker?: () => WorkerProcess;
   private readonly workerInitTimeoutMs: number;
@@ -54,6 +56,7 @@ export class ProcessAlgorithmPool implements AlgorithmRunner {
     this.backend = options.backend;
     this.concurrency = Math.max(2, Math.floor(options.concurrency));
     this.logLevel = options.logLevel;
+    this.logLength = options.logLength;
     this.workerPath = options.workerPath || resolveDefaultWorkerPath();
     this.createWorker = options.createWorker;
     this.workerInitTimeoutMs = Math.max(1, Math.floor(options.workerInitTimeoutMs ?? DEFAULT_WORKER_INIT_TIMEOUT_MS));
@@ -161,6 +164,7 @@ export class ProcessAlgorithmPool implements AlgorithmRunner {
         type: 'init',
         backend: this.backend,
         logLevel: this.logLevel,
+        logLength: this.logLength,
       });
     });
   }

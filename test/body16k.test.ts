@@ -14,7 +14,7 @@ describe(`${REQUEST_BODY_SIZE_KIB}K request body`, () => {
     it(`generate attestation with a ${REQUEST_BODY_SIZE_KIB} KiB POST body`, async () => {
         const zkTLS = new PrimusCoreTLS();
         try {
-            const result = await zkTLS.init(appId, appSecret);
+            const result = await zkTLS.init(appId, appSecret,{logLevel: 'debug',logLength: 4096,});
             console.log("-------------init result=", result);
 
             const body = 'a'.repeat(REQUEST_BODY_SIZE_BYTES);

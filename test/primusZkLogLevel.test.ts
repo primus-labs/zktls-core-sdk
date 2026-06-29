@@ -23,8 +23,8 @@ describe('primus_zk log level', () => {
     await (init as (backend: 'wasm', logLevel: string) => Promise<string>)('wasm', 'debug');
 
     expect(JSON.parse(callAlgorithm.mock.calls[0][0])).toMatchObject({
-      method: 'setLogLevel',
-      params: { logLevel: 'debug' },
+      method: 'setLogConfig',
+      params: { logLevel: 'debug', logLength: '2048' },
     });
     expect(JSON.parse(callAlgorithm.mock.calls[1][0])).toMatchObject({ method: 'init' });
   });

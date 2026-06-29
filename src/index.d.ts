@@ -79,6 +79,7 @@ export type PrimusInitOptions = {
     backend?: import('./primus_zk').AlgorithmBackend;
     concurrency?: number;
     logLevel?: import('./primus_zk').AlgorithmLogLevel;
+    logLength?: number;
 }
 
 export type AttestationProgressEvent =

@@ -80,10 +80,14 @@ async function initAlgorithm(mode: AlgorithmBackend = 'auto'): Promise<(params: 
 }
 
 let callAlgorithm = null;
-export const init = async (mode: AlgorithmBackend = 'auto', logLevel: AlgorithmLogLevel = 'error') => {
+export const init = async (
+  mode: AlgorithmBackend = 'auto',
+  logLevel: AlgorithmLogLevel = 'error',
+  logLength = 2048
+) => {
   callAlgorithm = await initAlgorithm(mode);
 
-  const logParams = buildAlgorithmParams('setLogLevel', { logLevel });
+  const logParams = buildAlgorithmParams('setLogConfig', { logLevel, logLength: String(logLength) });
   const logResult = await callAlgorithm(logParams);
 
   const params = buildAlgorithmParams('init', {});

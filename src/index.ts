@@ -96,10 +96,15 @@ class PrimusCoreTLS {
         backend: initOptions.backend,
         concurrency: this._concurrency,
         logLevel: initOptions.logLevel,
+        logLength: initOptions.logLength,
       });
-      return this._algorithmPool.init({ backend: initOptions.backend, logLevel: initOptions.logLevel });
+      return this._algorithmPool.init({
+        backend: initOptions.backend,
+        logLevel: initOptions.logLevel,
+        logLength: initOptions.logLength,
+      });
     }
-    return await init(initOptions.backend, initOptions.logLevel);
+    return await init(initOptions.backend, initOptions.logLevel, initOptions.logLength);
   }
 
   async close(): Promise<void> {
@@ -115,13 +120,16 @@ class PrimusCoreTLS {
         backend: modeOrOptions,
         concurrency: 1,
         logLevel: 'error',
+        logLength: 2048,
       };
     }
     const concurrency = modeOrOptions.concurrency ?? 1;
+    const logLength = modeOrOptions.logLength ?? 2048;
     return {
       backend: modeOrOptions.backend ?? 'auto',
       concurrency: Number.isFinite(concurrency) && concurrency > 1 ? Math.floor(concurrency) : 1,
       logLevel: modeOrOptions.logLevel ?? 'error',
+      logLength: Number.isFinite(logLength) && logLength > 0 ? Math.floor(logLength) : 2048,
     };
   }
 
