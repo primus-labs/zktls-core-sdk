@@ -5,10 +5,14 @@ class FakeWorker extends EventEmitter {
   sent: unknown[] = [];
   killed = false;
 
+  constructor(private readonly autoReady = true) {
+    super();
+  }
+
   send(message: unknown) {
     this.sent.push(message);
     const msg = message as { id: string; type: string };
-    if (msg.type === 'init') {
+    if (msg.type === 'init' && this.autoReady) {
       setImmediate(() => this.emit('message', { id: msg.id, type: 'ready', result: true }));
     }
     return true;
@@ -135,5 +139,34 @@ describe('ProcessAlgorithmPool', () => {
     workers[0].emit('message', { id: secondAttest.id, type: 'done', result: { retcode: '0' } });
     await second;
     await pool.close();
+  });
+
+  it('rejects a task when the worker does not become ready before init timeout', async () => {
+    jest.useFakeTimers();
+    const workers: FakeWorker[] = [];
+    const pool = new ProcessAlgorithmPool({
+      backend: 'native',
+      concurrency: 2,
+      logLevel: 'error',
+      workerInitTimeoutMs: 50,
+      createWorker: () => {
+        const worker = new FakeWorker(false);
+        workers.push(worker);
+        return worker;
+      },
+    } as ConstructorParameters<typeof ProcessAlgorithmPool>[0]);
+
+    const task = pool.runAttestation({ requestid: 'first' }, { timeout: 1000, pollIntervalMs: 10 });
+    const taskExpectation = expect(task).rejects.toThrow('Algorithm worker init timed out after 50ms');
+
+    expect(workers).toHaveLength(1);
+    expect(workers[0].sent[0]).toEqual(expect.objectContaining({ type: 'init' }));
+
+    await jest.advanceTimersByTimeAsync(50);
+    await taskExpectation;
+    expect(workers[0].killed).toBe(true);
+
+    await pool.close();
+    jest.useRealTimers();
   });
 });

@@ -27,12 +27,15 @@ type PoolWorker = {
   currentTask?: PoolTask;
 };
 
+const DEFAULT_WORKER_INIT_TIMEOUT_MS = 15000;
+
 type ProcessAlgorithmPoolOptions = {
   backend: AlgorithmBackend;
   concurrency: number;
   logLevel: AlgorithmLogLevel;
   workerPath?: string;
   createWorker?: () => WorkerProcess;
+  workerInitTimeoutMs?: number;
 };
 
 export class ProcessAlgorithmPool implements AlgorithmRunner {
@@ -41,6 +44,7 @@ export class ProcessAlgorithmPool implements AlgorithmRunner {
   private readonly logLevel: AlgorithmLogLevel;
   private readonly workerPath: string;
   private readonly createWorker?: () => WorkerProcess;
+  private readonly workerInitTimeoutMs: number;
   private readonly workers: PoolWorker[] = [];
   private readonly pending: PoolTask[] = [];
   private readonly initWaiters = new Map<string, { resolve: () => void; reject: (error: unknown) => void }>();
@@ -52,6 +56,7 @@ export class ProcessAlgorithmPool implements AlgorithmRunner {
     this.logLevel = options.logLevel;
     this.workerPath = options.workerPath || resolveDefaultWorkerPath();
     this.createWorker = options.createWorker;
+    this.workerInitTimeoutMs = Math.max(1, Math.floor(options.workerInitTimeoutMs ?? DEFAULT_WORKER_INIT_TIMEOUT_MS));
   }
 
   init(_options?: unknown): Promise<string | boolean> {
@@ -130,8 +135,27 @@ export class ProcessAlgorithmPool implements AlgorithmRunner {
   private initializeWorker(worker: PoolWorker): Promise<void> {
     return new Promise((resolve, reject) => {
       const id = this.nextId('init');
+      const timeoutId = setTimeout(() => {
+        if (!this.initWaiters.has(id)) {
+          return;
+        }
+        this.initWaiters.delete(id);
+        worker.initId = undefined;
+        this.removeWorker(worker);
+        worker.process.kill();
+        reject(new Error(`Algorithm worker init timed out after ${this.workerInitTimeoutMs}ms`));
+      }, this.workerInitTimeoutMs);
       worker.initId = id;
-      this.initWaiters.set(id, { resolve, reject });
+      this.initWaiters.set(id, {
+        resolve: () => {
+          clearTimeout(timeoutId);
+          resolve();
+        },
+        reject: (error: unknown) => {
+          clearTimeout(timeoutId);
+          reject(error);
+        },
+      });
       this.send(worker, {
         id,
         type: 'init',
