@@ -785,6 +785,8 @@ class PrimusCoreTLS {
 
 export { PrimusCoreTLS, Attestation };
 export type {
+  AttMode,
+  AttModeInput,
   AttestationProgressEvent,
   GenerateRequestParamsOptions,
   PrimusInitOptions,

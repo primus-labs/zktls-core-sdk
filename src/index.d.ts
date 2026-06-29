@@ -37,9 +37,14 @@ export type AttMode = {
   resultType: AttModeResultType;
 }
 
+export type AttModeInput = {
+  algorithmType: AttModeAlgorithmType;
+  resultType?: AttModeResultType;
+}
+
 export type AttRequestOptions = {
     requestid?: string;
-    attMode?: AttMode;
+    attMode?: AttModeInput;
     attConditions?: object;
     additionParams?: string;
     extendedParams?: string;

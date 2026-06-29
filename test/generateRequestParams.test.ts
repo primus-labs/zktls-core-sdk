@@ -94,6 +94,33 @@ describe('generateRequestParams options', () => {
     );
   });
 
+  it('defaults attMode.resultType to plain when omitted in options', () => {
+    const client = new PrimusCoreTLS();
+
+    const attRequest = client.generateRequestParams(sampleRequest, sampleResponseResolves, {
+      attMode: {
+        algorithmType: 'mpctls',
+      },
+    });
+
+    expect(attRequest.attMode).toEqual({
+      algorithmType: 'mpctls',
+      resultType: 'plain',
+    });
+  });
+
+  it('defaults attMode.resultType to plain when setAttMode omits resultType', () => {
+    const client = new PrimusCoreTLS();
+
+    const attRequest = client.generateRequestParams(sampleRequest, sampleResponseResolves);
+    attRequest.setAttMode({ algorithmType: 'proxytls' });
+
+    expect(attRequest.attMode).toEqual({
+      algorithmType: 'proxytls',
+      resultType: 'plain',
+    });
+  });
+
   it('keeps legacy userAddress string as the third argument', () => {
     const client = new PrimusCoreTLS();
     const userAddress = '0x1234567890123456789012345678901234567890';

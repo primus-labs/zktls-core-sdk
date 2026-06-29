@@ -1,4 +1,4 @@
-import type { AttMode, AttNetworkRequest, AttNetworkResponseResolve, BaseAttestationParams, AttSslCipher} from '../index.d'
+import type { AttMode, AttModeInput, AttNetworkRequest, AttNetworkResponseResolve, BaseAttestationParams, AttSslCipher} from '../index.d'
 import { getInstanceProperties } from '../utils'
 import { normalizeRequestId } from '../utils/requestId'
 
@@ -61,10 +61,10 @@ export class AttRequest {
   setExtendedParams(extendedParams: string) {
     this.extendedParams = extendedParams
   }
-  setAttMode({algorithmType, resultType='plain'}: AttMode) {
+  setAttMode({ algorithmType, resultType = 'plain' }: AttModeInput) {
     this.attMode = {
       algorithmType,
-      resultType
+      resultType,
     };
   }
   setAttConditions(attConditions: Object) {

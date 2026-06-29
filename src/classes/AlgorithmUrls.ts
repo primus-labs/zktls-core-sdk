@@ -43,6 +43,21 @@ function isAlgorithmNode(value: unknown): value is AlgorithmNode {
   return typeof node.algorithmDomain === 'string' && typeof node.algoProxyDomain === 'string';
 }
 
+type ProbeWebSocket = {
+  onopen: (() => void) | null;
+  onerror: (() => void) | null;
+  close(): void;
+};
+
+type WebSocketConstructor = new (url: string) => ProbeWebSocket;
+
+function resolveWebSocketCtor(): WebSocketConstructor {
+  if (globalThis.WebSocket) {
+    return globalThis.WebSocket as unknown as WebSocketConstructor;
+  }
+  return require('ws') as WebSocketConstructor;
+}
+
 export class AlgorithmUrls {
   primusMpcUrl: string; // PADOURL
   primusProxyUrl: string;// ZKPADOURL
@@ -111,7 +126,8 @@ export class AlgorithmUrls {
 
   private probeNode(node: AlgorithmNode, wsTimeoutMs: number): Promise<ResolvedAlgorithmUrls | undefined> {
     return new Promise((resolve) => {
-      const ws = new WebSocket(`wss://${node.algoProxyDomain}/algoproxy`);
+      const WebSocketCtor = resolveWebSocketCtor();
+      const ws = new WebSocketCtor(`wss://${node.algoProxyDomain}/algoproxy`);
       let settled = false;
       function resolveOnce(urls?: ResolvedAlgorithmUrls) {
         if (settled) {
