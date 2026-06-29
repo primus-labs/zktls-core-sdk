@@ -27,7 +27,17 @@ import { ZkAttestationError } from './classes/Error'
 import { ALGO_ERR_NORMALIZE_TO_50000, AttestationErrorCode } from './config/error';
 import { getAppQuote } from './api';
 import { eventReport } from './utils/eventReport'
+import { safeJsonParse } from './utils/safeJsonParse';
 import { ClientType, EventReportRawData } from './api/index.d';
+
+const KNOWN_EXTRA_DATA_ERROR_CODES = new Set([
+  '-1200010',
+  '-1002001',
+  '-1002002',
+  '-1002003',
+  '-1002004',
+  '-1002005',
+]);
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require('../package.json') as { name: string; version: string };
@@ -458,7 +468,7 @@ class PrimusCoreTLS {
       // Network errors will be caught and logged, but won't stop execution
       await this._checkAppQuote();
 
-      console.log('signedAttRequest====', JSON.stringify(signedAttRequest));
+      // console.log('signedAttRequest====', JSON.stringify(signedAttRequest));
       const attParams = {
         ...assemblyParams(signedAttRequest, effectiveAlgoUrls, startOptions),
         stream: startOptions.stream,
@@ -533,19 +543,25 @@ class PrimusCoreTLS {
             ...eventReportBaseParams,
             status: "SUCCESS",
           })
-          return Promise.resolve(JSON.parse(encodedData))
+          const parsedEncodedData = safeJsonParse(encodedData, {
+            field: 'encodedData',
+            fallbackCode: '99999',
+            data: res,
+          });
+          return Promise.resolve(parsedEncodedData)
         } else if (!signature || balanceGreaterThanBaseValue === 'false') {
-          let errorCode;
-          if (
-            extraData &&
-            JSON.parse(extraData) &&
-            ['-1200010', '-1002001', '-1002002', '-1002003', '-1002004', '-1002005'].includes(
-              JSON.parse(extraData).errorCode + ''
-            )
-          ) {
-            errorCode = JSON.parse(extraData).errorCode + '';
-          } else {
-            errorCode = '00104';
+          let errorCode: AttestationErrorCode = '00104';
+          if (typeof extraData === 'string' && extraData.trim() !== '') {
+            const parsedExtraData = safeJsonParse<{ errorCode?: unknown }>(extraData, {
+              field: 'extraData',
+              fallbackCode: '99999',
+              data: res,
+            });
+            const rawErrorCode =
+              parsedExtraData?.errorCode != null ? String(parsedExtraData.errorCode) : '';
+            if (KNOWN_EXTRA_DATA_ERROR_CODES.has(rawErrorCode)) {
+              errorCode = rawErrorCode as AttestationErrorCode;
+            }
           }
           this.reportEventIfNeeded({
             ...eventReportBaseParams,

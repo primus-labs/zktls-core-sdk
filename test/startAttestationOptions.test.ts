@@ -271,4 +271,58 @@ describe('startAttestation options', () => {
     resolveFirst(finalResult);
     await first;
   });
+
+  it('rejects with ZkAttestationError when encodedData is malformed JSON', async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
+
+    (getAttestationResult as jest.Mock).mockResolvedValue({
+      retcode: '0',
+      content: {
+        balanceGreaterThanBaseValue: 'true',
+        signature: '0x1',
+        encodedData: '{not-json',
+      },
+    });
+
+    await expect(client.startAttestation(makeRequest(client))).rejects.toMatchObject({
+      code: '99999',
+    });
+  });
+
+  it('rejects with ZkAttestationError when extraData is malformed JSON', async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
+
+    (getAttestationResult as jest.Mock).mockResolvedValue({
+      retcode: '0',
+      content: {
+        balanceGreaterThanBaseValue: 'false',
+        signature: '',
+        extraData: '{bad',
+      },
+    });
+
+    await expect(client.startAttestation(makeRequest(client))).rejects.toMatchObject({
+      code: '99999',
+    });
+  });
+
+  it('maps known extraData error codes when proof requirements are not met', async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
+
+    (getAttestationResult as jest.Mock).mockResolvedValue({
+      retcode: '0',
+      content: {
+        balanceGreaterThanBaseValue: 'false',
+        signature: '',
+        extraData: JSON.stringify({ errorCode: '-1002003' }),
+      },
+    });
+
+    await expect(client.startAttestation(makeRequest(client))).rejects.toMatchObject({
+      code: '-1002003',
+    });
+  });
 });

@@ -12,6 +12,32 @@ export interface RequestConfig {
   responseType?: 'json' | 'text' | 'blob' | 'arrayBuffer';
 }
 
+async function readResponseData(
+  response: Response,
+  responseType: NonNullable<RequestConfig['responseType']>
+): Promise<unknown> {
+  switch (responseType) {
+    case 'text':
+      return response.text();
+    case 'blob':
+      return response.blob();
+    case 'arrayBuffer':
+      return response.arrayBuffer();
+    case 'json':
+    default: {
+      const text = await response.text();
+      if (text.trim() === '') {
+        return text;
+      }
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    }
+  }
+}
+
 export async function request<T = any>(config: RequestConfig): Promise<T> {
   const {
     url,
@@ -70,27 +96,7 @@ export async function request<T = any>(config: RequestConfig): Promise<T> {
       clearTimeout(timeoutId);
     }
 
-    let responseData: any;
-    try {
-      switch (responseType) {
-        case 'json':
-          responseData = await response.json();
-          break;
-        case 'text':
-          responseData = await response.text();
-          break;
-        case 'blob':
-          responseData = await response.blob();
-          break;
-        case 'arrayBuffer':
-          responseData = await response.arrayBuffer();
-          break;
-        default:
-          responseData = await response.json();
-      }
-    } catch (parseError) {
-      responseData = await response.text();
-    }
+    const responseData = await readResponseData(response, responseType);
 
     if (!response.ok) {
       const error = new Error(`HTTP ${response.status}: ${response.statusText}`) as any;
@@ -100,7 +106,7 @@ export async function request<T = any>(config: RequestConfig): Promise<T> {
       throw error;
     }
 
-    return responseData;
+    return responseData as T;
   } catch (error: any) {
     if (timeoutId) {
       clearTimeout(timeoutId);

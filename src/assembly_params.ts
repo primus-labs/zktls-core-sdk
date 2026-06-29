@@ -24,7 +24,7 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
             proxyUrl = ""; // only supported under mpctls model
         }
     }
-    console.log('assemblyParams', padoUrl, proxyUrl, modelType);
+    // console.log('assemblyParams', padoUrl, proxyUrl, modelType);
     let timestamp = (+ new Date()).toString();
     const attestationParams = {
         source: "source", // not empty
