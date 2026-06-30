@@ -393,6 +393,76 @@ class PrimusCoreTLS {
         }
       }
     }
+
+    this._validateRequestResponseAlignment(attRequest)
+  }
+
+  private _isNestedResponseResolves(
+    responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][]
+  ): boolean {
+    return (
+      Array.isArray(responseResolves) &&
+      responseResolves.length > 0 &&
+      Array.isArray(responseResolves[0])
+    )
+  }
+
+  /** Ensures batch request, responseResolves, and attConditions group counts align. */
+  private _validateRequestResponseAlignment(attRequest: AttRequest | FullAttestationParams): void {
+    const { request, responseResolves, attConditions } = attRequest
+    if (request === undefined) {
+      return
+    }
+
+    const requestCount = Array.isArray(request) ? request.length : 1
+    const isRequestArray = Array.isArray(request)
+
+    if (responseResolves !== undefined) {
+      if (!Array.isArray(responseResolves)) {
+        throw new ZkAttestationError('00005', 'responseResolves must be an array')
+      }
+
+      const isNested = this._isNestedResponseResolves(responseResolves)
+
+      if (requestCount > 1) {
+        if (!isNested) {
+          throw new ZkAttestationError(
+            '00005',
+            'responseResolves must be a nested array (one group per request) when request contains multiple entries'
+          )
+        }
+        if (responseResolves.length !== requestCount) {
+          throw new ZkAttestationError(
+            '00005',
+            `responseResolves length (${responseResolves.length}) must match request length (${requestCount})`
+          )
+        }
+      } else if (isRequestArray) {
+        if (isNested && responseResolves.length !== 1) {
+          throw new ZkAttestationError(
+            '00005',
+            `responseResolves nested array length (${responseResolves.length}) must match request length (${requestCount})`
+          )
+        }
+      } else if (isNested) {
+        throw new ZkAttestationError(
+          '00005',
+          'responseResolves must be a flat array when request is a single object'
+        )
+      }
+    }
+
+    if (attConditions !== undefined && attConditions !== null) {
+      if (!Array.isArray(attConditions)) {
+        throw new ZkAttestationError('00005', 'attConditions must be an array')
+      }
+      if (attConditions.length > 0 && attConditions.length !== requestCount) {
+        throw new ZkAttestationError(
+          '00005',
+          `attConditions length (${attConditions.length}) must match request length (${requestCount})`
+        )
+      }
+    }
   }
 
   /** Same shape as {@link AlgorithmUrls}: primusMpcUrl, primusProxyUrl, proxyUrl (non-empty, parseable URLs). */

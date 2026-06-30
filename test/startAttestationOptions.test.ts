@@ -326,3 +326,89 @@ describe('startAttestation options', () => {
     });
   });
 });
+
+describe('startAttestation batch param validation', () => {
+  const initClient = async () => {
+    const client = new PrimusCoreTLS();
+    await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
+    return client;
+  };
+
+  const baseRequest = {
+    url: 'https://example.com/api',
+    method: 'GET' as const,
+    header: {},
+    body: '',
+  };
+
+  const baseResolve = {
+    keyName: 'status',
+    parsePath: '$.status',
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (getAttestation as jest.Mock).mockResolvedValue({ retcode: '0' });
+    (getAttestationResult as jest.Mock).mockResolvedValue(finalResult);
+  });
+
+  it('rejects multiple requests with flat responseResolves', async () => {
+    const client = await initClient();
+    const attRequest = client.generateRequestParams(baseRequest, [baseResolve]);
+    attRequest.request = [baseRequest, { ...baseRequest, url: 'https://example.com/other' }];
+    attRequest.responseResolves = [baseResolve, { ...baseResolve, keyName: 'time' }];
+
+    await expect(client.startAttestation(attRequest)).rejects.toMatchObject({
+      code: '00005',
+      message: expect.stringContaining('nested array'),
+    });
+    expect(getAttestation).not.toHaveBeenCalled();
+  });
+
+  it('rejects when responseResolves group count does not match request count', async () => {
+    const client = await initClient();
+    const attRequest = client.generateRequestParams(baseRequest, [[baseResolve]]);
+    attRequest.request = [baseRequest, { ...baseRequest, url: 'https://example.com/other' }];
+
+    await expect(client.startAttestation(attRequest)).rejects.toMatchObject({
+      code: '00005',
+      message: expect.stringContaining('must match request length (2)'),
+    });
+    expect(getAttestation).not.toHaveBeenCalled();
+  });
+
+  it('rejects nested responseResolves for a single request object', async () => {
+    const client = await initClient();
+    const attRequest = client.generateRequestParams(baseRequest, [[baseResolve]]);
+
+    await expect(client.startAttestation(attRequest)).rejects.toMatchObject({
+      code: '00005',
+      message: expect.stringContaining('flat array'),
+    });
+    expect(getAttestation).not.toHaveBeenCalled();
+  });
+
+  it('rejects when attConditions group count does not match request count', async () => {
+    const client = await initClient();
+    const attRequest = client.generateRequestParams(baseRequest, [[baseResolve], [baseResolve]]);
+    attRequest.request = [baseRequest, { ...baseRequest, url: 'https://example.com/other' }];
+    attRequest.setAttConditions([[{ field: 'status', op: 'STREQ', value: 'ok' }]]);
+
+    await expect(client.startAttestation(attRequest)).rejects.toMatchObject({
+      code: '00005',
+      message: expect.stringContaining('attConditions length (1) must match request length (2)'),
+    });
+    expect(getAttestation).not.toHaveBeenCalled();
+  });
+
+  it('accepts aligned batch request and responseResolves', async () => {
+    const client = await initClient();
+    const attRequest = client.generateRequestParams(
+      [baseRequest, { ...baseRequest, url: 'https://example.com/other' }],
+      [[baseResolve], [{ ...baseResolve, keyName: 'time', parsePath: '$.time' }]]
+    );
+
+    await client.startAttestation(attRequest);
+    expect(getAttestation).toHaveBeenCalled();
+  });
+});
