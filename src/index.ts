@@ -510,216 +510,51 @@ class PrimusCoreTLS {
     positionalAlgoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
   ): Promise<any> {
     const startOptions = this._resolveStartAttestationOptions(timeoutOrOptions, positionalAlgoUrls);
-    const { timeout, algoUrls } = startOptions;
-    let signedAttRequest: SignedAttRequest
+    let signedAttRequest: SignedAttRequest;
     try {
-      signedAttRequest = await this._resolveSignedAttRequest(input)
-      this._validateAttestationParams(signedAttRequest.attRequest, timeout, algoUrls)
+      signedAttRequest = await this._prepareSignedAttestation(input, startOptions);
     } catch (error: any) {
       return Promise.reject(error)
     }
+
     const { attRequest } = signedAttRequest
-    const effectiveAlgoUrls = this._resolveAlgoUrlsOverride(algoUrls)
-    // Check if there's already an attestation in progress
     if (this._concurrency <= 1 && this._isAttesting) {
       const errorCode = '00003';
       return Promise.reject(new ZkAttestationError(errorCode))
     }
 
-    // Set attestation flag
     if (this._concurrency <= 1) {
       this._isAttesting = true;
     }
 
     let currentRequestId = '';
-    const eventReportBaseParams = {
-      source: "",
-      clientType: packageJson.name as ClientType,
-      appId: attRequest.appId,
-      templateId: "",
-      address: attRequest.userAddress,
-      ext: {}
-    }
+    const eventReportBaseParams = this._buildEventReportBaseParams(attRequest);
     try {
-      // Check app quote before starting attestation
-      // Only business logic errors (ZkAttestationError) will be thrown
-      // Network errors will be caught and logged, but won't stop execution
       await this._checkAppQuote();
 
-      // console.log('signedAttRequest====', JSON.stringify(signedAttRequest));
-      const attParams = {
-        ...assemblyParams(signedAttRequest, effectiveAlgoUrls, startOptions),
-        stream: startOptions.stream,
-      };
+      const attParams = this._assembleStartAttestationParams(signedAttRequest, input, startOptions);
       currentRequestId = attParams.requestid;
-      if (input instanceof AttRequest) {
-        input.requestid = attParams.requestid;
-      }
-      let getAttestationRes: any = { retcode: '0' };
-      let res: any;
-      if (this._algorithmPool) {
-        const poolResult = await this._algorithmPool.runAttestation(attParams, {
-          timeout,
-          pollIntervalMs: startOptions.pollIntervalMs,
-          onResult: (result) => this._handleAlgorithmProgress(result, attParams.requestid, startOptions),
-        });
-        const normalizedPoolResult = this._normalizeAlgorithmPoolResult(poolResult);
-        if (normalizedPoolResult.phase === 'start') {
-          getAttestationRes = normalizedPoolResult.result;
-        } else {
-          res = normalizedPoolResult.result;
-        }
-      } else {
-        getAttestationRes = await getAttestation(attParams, {
-          onStream: (result) => this._handleAlgorithmProgress(result, attParams.requestid, startOptions),
-        });
-      }
-      
+
+      const { getAttestationRes, result } = await this._runAttestationAlgorithm(attParams, startOptions);
       if (getAttestationRes.retcode !== "0") {
-        const errorCode = getAttestationRes.retcode === '2' ? '00001' : '00000';
-        this.reportEventIfNeeded({
-          ...eventReportBaseParams,
-          status: "FAILED",
-          detail: {
-            code: errorCode,
-            desc: ""
-          },
-          ext: {
-            getAttestationRes: JSON.stringify(getAttestationRes)
-          }
-        })
-        const startError = new ZkAttestationError(errorCode);
-        await this._emitProgressIfNeeded(startOptions, {
-          type: 'error',
-          requestId: currentRequestId,
-          error: startError,
-        });
-        return Promise.reject(startError)
-      }
-      if (!this._algorithmPool) {
-        res = await getAttestationResult({
-          timeout,
-          pollIntervalMs: startOptions.pollIntervalMs,
-        });
-      }
-      const { retcode, content, details } = res
-      if (retcode === '0') {
-        const { balanceGreaterThanBaseValue, signature, encodedData, extraData, privateData } = content
-        if (balanceGreaterThanBaseValue === 'true' && signature) {
-          if (
-            typeof privateData === 'string' &&
-            typeof attParams.requestid === 'string' &&
-            attParams.requestid.trim() !== ''
-          ) {
-            this._allPrivateData[attParams.requestid] = privateData;
-          }
-          await this._emitProgressIfNeeded(startOptions, {
-            type: 'proof-ready',
-            requestId: attParams.requestid,
-          });
-          this.reportEventIfNeeded({
-            ...eventReportBaseParams,
-            status: "SUCCESS",
-          })
-          const parsedEncodedData = safeJsonParse(encodedData, {
-            field: 'encodedData',
-            fallbackCode: '99999',
-            data: res,
-          });
-          return Promise.resolve(parsedEncodedData)
-        } else if (!signature || balanceGreaterThanBaseValue === 'false') {
-          let errorCode: AttestationErrorCode = '00104';
-          if (typeof extraData === 'string' && extraData.trim() !== '') {
-            const parsedExtraData = safeJsonParse<{ errorCode?: unknown }>(extraData, {
-              field: 'extraData',
-              fallbackCode: '99999',
-              data: res,
-            });
-            const rawErrorCode =
-              parsedExtraData?.errorCode != null ? String(parsedExtraData.errorCode) : '';
-            if (KNOWN_EXTRA_DATA_ERROR_CODES.has(rawErrorCode)) {
-              errorCode = rawErrorCode as AttestationErrorCode;
-            }
-          }
-          this.reportEventIfNeeded({
-            ...eventReportBaseParams,
-            status: "FAILED",
-            detail: {
-              code: errorCode,
-              desc: ""
-            },
-            ext: {
-              getAttestationResultRes: JSON.stringify(res)
-            }
-          })
-
-          const proofError = new ZkAttestationError(errorCode as AttestationErrorCode, '', res);
-          await this._emitProgressIfNeeded(startOptions, {
-            type: 'error',
-            requestId: currentRequestId,
-            error: proofError,
-          });
-          return Promise.reject(proofError)
-        }
-      } else if (retcode === '2') {
-        const { errlog: { code: rawCode, desc: detailsDesc } = {} } = details || {};
-        const rawNum = rawCode != null && rawCode !== '' ? Number(rawCode) : NaN;
-        const mapped50000Sub = ALGO_ERR_NORMALIZE_TO_50000[rawNum];
-        let resolvedCode =
-          rawCode != null && String(rawCode).trim() !== '' ? String(rawCode) : '99999:001';
-        let resolvedSubCode: string | undefined;
-        if (mapped50000Sub !== undefined) {
-          resolvedCode = `50000:${mapped50000Sub}`;
-        } else if (rawNum === 30001) {
-          resolvedSubCode =
-            typeof detailsDesc === 'string' ? detailsDesc.match(/\b\d{3}\b/)?.[0] : undefined;
-        }
-
-        const reportCode = buildEventReportCode(resolvedCode, resolvedSubCode);
-        this.reportEventIfNeeded({
-          ...eventReportBaseParams,
-          status: 'FAILED',
-          detail: {
-            code: reportCode,
-            desc: '',
-          },
-          ext: {
-            getAttestationResultRes: JSON.stringify(res)
-          }
-        });
-        const algorithmError = new ZkAttestationError(
-          resolvedCode as AttestationErrorCode,
-          '',
-          res,
-          resolvedSubCode
+        return this._rejectStartAttestationFailure(
+          getAttestationRes,
+          currentRequestId,
+          eventReportBaseParams,
+          startOptions
         );
-        await this._emitProgressIfNeeded(startOptions, {
-          type: 'error',
-          requestId: currentRequestId,
-          error: algorithmError,
-        });
-        return Promise.reject(algorithmError);
       }
+
+      const attestationResult = this._algorithmPool ? result : await this._pollAttestationResult(startOptions);
+      return await this._normalizeAttestationResult(
+        attestationResult,
+        attParams.requestid,
+        eventReportBaseParams,
+        startOptions
+      );
     } catch (e: any) {
       if (e?.code === 'timeout') {
-        const timeoutError = new ZkAttestationError('00002', '', e.data);
-        await this._emitProgressIfNeeded(startOptions, {
-          type: 'error',
-          requestId: currentRequestId,
-          error: timeoutError,
-        });
-        this.reportEventIfNeeded({
-          ...eventReportBaseParams,
-          status: "FAILED",
-          detail: {
-            code: '00002',
-            desc: ""
-          },
-          ext: {
-            getAttestationResultRes: JSON.stringify(e.data)
-          }
-        })
-        return Promise.reject(timeoutError)
+        return this._rejectTimeoutAttestation(e, currentRequestId, eventReportBaseParams, startOptions)
       } else {
         return Promise.reject(e)
       }
@@ -729,6 +564,270 @@ class PrimusCoreTLS {
         this._isAttesting = false;
       }
     }
+  }
+
+  private async _prepareSignedAttestation(
+    input: StartAttestationInput,
+    startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
+  ): Promise<SignedAttRequest> {
+    const signedAttRequest = await this._resolveSignedAttRequest(input);
+    this._validateAttestationParams(signedAttRequest.attRequest, startOptions.timeout, startOptions.algoUrls);
+    return signedAttRequest;
+  }
+
+  private _buildEventReportBaseParams(attRequest: FullAttestationParams) {
+    return {
+      source: "",
+      clientType: packageJson.name as ClientType,
+      appId: attRequest.appId,
+      templateId: "",
+      address: attRequest.userAddress,
+      ext: {}
+    };
+  }
+
+  private _assembleStartAttestationParams(
+    signedAttRequest: SignedAttRequest,
+    input: StartAttestationInput,
+    startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
+  ) {
+    const effectiveAlgoUrls = this._resolveAlgoUrlsOverride(startOptions.algoUrls);
+    const attParams = {
+      ...assemblyParams(signedAttRequest, effectiveAlgoUrls, startOptions),
+      stream: startOptions.stream,
+    };
+    if (input instanceof AttRequest) {
+      input.requestid = attParams.requestid;
+    }
+    return attParams;
+  }
+
+  private async _runAttestationAlgorithm(
+    attParams: ReturnType<typeof assemblyParams> & { stream: boolean },
+    startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
+  ): Promise<{ getAttestationRes: any; result?: any }> {
+    if (this._algorithmPool) {
+      const poolResult = await this._algorithmPool.runAttestation(attParams, {
+        timeout: startOptions.timeout,
+        pollIntervalMs: startOptions.pollIntervalMs,
+        onResult: (result) => this._handleAlgorithmProgress(result, attParams.requestid, startOptions),
+      });
+      const normalizedPoolResult = this._normalizeAlgorithmPoolResult(poolResult);
+      if (normalizedPoolResult.phase === 'start') {
+        return {
+          getAttestationRes: normalizedPoolResult.result,
+        };
+      }
+      return {
+        getAttestationRes: { retcode: '0' },
+        result: normalizedPoolResult.result,
+      };
+    }
+
+    const getAttestationRes = await getAttestation(attParams, {
+      onStream: (result) => this._handleAlgorithmProgress(result, attParams.requestid, startOptions),
+    });
+    return { getAttestationRes };
+  }
+
+  private async _pollAttestationResult(
+    startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
+  ): Promise<any> {
+    return getAttestationResult({
+      timeout: startOptions.timeout,
+      pollIntervalMs: startOptions.pollIntervalMs,
+    });
+  }
+
+  private async _rejectStartAttestationFailure(
+    getAttestationRes: any,
+    requestId: string,
+    eventReportBaseParams: ReturnType<PrimusCoreTLS['_buildEventReportBaseParams']>,
+    startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
+  ): Promise<never> {
+    const errorCode = getAttestationRes.retcode === '2' ? '00001' : '00000';
+    this.reportEventIfNeeded({
+      ...eventReportBaseParams,
+      status: "FAILED",
+      detail: {
+        code: errorCode,
+        desc: ""
+      },
+      ext: {
+        getAttestationRes: JSON.stringify(getAttestationRes)
+      }
+    })
+    const startError = new ZkAttestationError(errorCode);
+    await this._emitProgressIfNeeded(startOptions, {
+      type: 'error',
+      requestId,
+      error: startError,
+    });
+    return Promise.reject(startError)
+  }
+
+  private async _normalizeAttestationResult(
+    res: any,
+    requestId: string,
+    eventReportBaseParams: ReturnType<PrimusCoreTLS['_buildEventReportBaseParams']>,
+    startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
+  ): Promise<any> {
+    const { retcode, content, details } = res
+    if (retcode === '0') {
+      const { balanceGreaterThanBaseValue, signature, encodedData, extraData, privateData } = content
+      if (balanceGreaterThanBaseValue === 'true' && signature) {
+        if (
+          typeof privateData === 'string' &&
+          typeof requestId === 'string' &&
+          requestId.trim() !== ''
+        ) {
+          this._allPrivateData[requestId] = privateData;
+        }
+        await this._emitProgressIfNeeded(startOptions, {
+          type: 'proof-ready',
+          requestId,
+        });
+        this.reportEventIfNeeded({
+          ...eventReportBaseParams,
+          status: "SUCCESS",
+        })
+        return safeJsonParse(encodedData, {
+          field: 'encodedData',
+          fallbackCode: '99999',
+          data: res,
+        });
+      } else if (!signature || balanceGreaterThanBaseValue === 'false') {
+        return this._rejectProofFailure(res, extraData, requestId, eventReportBaseParams, startOptions)
+      }
+    } else if (retcode === '2') {
+      return this._rejectAlgorithmFailure(res, details, requestId, eventReportBaseParams, startOptions);
+    }
+  }
+
+  private _resolveProofFailureCode(extraData: unknown, res: any): AttestationErrorCode {
+    if (typeof extraData !== 'string' || extraData.trim() === '') {
+      return '00104';
+    }
+
+    const parsedExtraData = safeJsonParse<{ errorCode?: unknown }>(extraData, {
+      field: 'extraData',
+      fallbackCode: '99999',
+      data: res,
+    });
+    const rawErrorCode =
+      parsedExtraData?.errorCode != null ? String(parsedExtraData.errorCode) : '';
+    if (KNOWN_EXTRA_DATA_ERROR_CODES.has(rawErrorCode)) {
+      return rawErrorCode as AttestationErrorCode;
+    }
+    return '00104';
+  }
+
+  private async _rejectProofFailure(
+    res: any,
+    extraData: unknown,
+    requestId: string,
+    eventReportBaseParams: ReturnType<PrimusCoreTLS['_buildEventReportBaseParams']>,
+    startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
+  ): Promise<never> {
+    const errorCode = this._resolveProofFailureCode(extraData, res);
+    this.reportEventIfNeeded({
+      ...eventReportBaseParams,
+      status: "FAILED",
+      detail: {
+        code: errorCode,
+        desc: ""
+      },
+      ext: {
+        getAttestationResultRes: JSON.stringify(res)
+      }
+    })
+
+    const proofError = new ZkAttestationError(errorCode as AttestationErrorCode, '', res);
+    await this._emitProgressIfNeeded(startOptions, {
+      type: 'error',
+      requestId,
+      error: proofError,
+    });
+    return Promise.reject(proofError)
+  }
+
+  private _resolveAlgorithmError(details: any): { code: string; subCode?: string } {
+    const { errlog: { code: rawCode, desc: detailsDesc } = {} } = details || {};
+    const rawNum = rawCode != null && rawCode !== '' ? Number(rawCode) : NaN;
+    const mapped50000Sub = ALGO_ERR_NORMALIZE_TO_50000[rawNum];
+    let resolvedCode =
+      rawCode != null && String(rawCode).trim() !== '' ? String(rawCode) : '99999:001';
+    let resolvedSubCode: string | undefined;
+    if (mapped50000Sub !== undefined) {
+      resolvedCode = `50000:${mapped50000Sub}`;
+    } else if (rawNum === 30001) {
+      resolvedSubCode =
+        typeof detailsDesc === 'string' ? detailsDesc.match(/\b\d{3}\b/)?.[0] : undefined;
+    }
+    return {
+      code: resolvedCode,
+      subCode: resolvedSubCode,
+    };
+  }
+
+  private async _rejectAlgorithmFailure(
+    res: any,
+    details: any,
+    requestId: string,
+    eventReportBaseParams: ReturnType<PrimusCoreTLS['_buildEventReportBaseParams']>,
+    startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
+  ): Promise<never> {
+    const { code, subCode } = this._resolveAlgorithmError(details);
+    const reportCode = buildEventReportCode(code, subCode);
+    this.reportEventIfNeeded({
+      ...eventReportBaseParams,
+      status: 'FAILED',
+      detail: {
+        code: reportCode,
+        desc: '',
+      },
+      ext: {
+        getAttestationResultRes: JSON.stringify(res)
+      }
+    });
+    const algorithmError = new ZkAttestationError(
+      code as AttestationErrorCode,
+      '',
+      res,
+      subCode
+    );
+    await this._emitProgressIfNeeded(startOptions, {
+      type: 'error',
+      requestId,
+      error: algorithmError,
+    });
+    return Promise.reject(algorithmError);
+  }
+
+  private async _rejectTimeoutAttestation(
+    error: any,
+    requestId: string,
+    eventReportBaseParams: ReturnType<PrimusCoreTLS['_buildEventReportBaseParams']>,
+    startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
+  ): Promise<never> {
+    const timeoutError = new ZkAttestationError('00002', '', error.data);
+    await this._emitProgressIfNeeded(startOptions, {
+      type: 'error',
+      requestId,
+      error: timeoutError,
+    });
+    this.reportEventIfNeeded({
+      ...eventReportBaseParams,
+      status: "FAILED",
+      detail: {
+        code: '00002',
+        desc: ""
+      },
+      ext: {
+        getAttestationResultRes: JSON.stringify(error.data)
+      }
+    })
+    return Promise.reject(timeoutError)
   }
 
   private _resolveStartAttestationOptions(
