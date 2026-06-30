@@ -1,8 +1,19 @@
+export type HttpMethod =
+  | 'GET'
+  | 'POST'
+  | 'PUT'
+  | 'DELETE'
+  | 'PATCH'
+  | 'HEAD'
+  | 'OPTIONS'
+  | 'CONNECT'
+  | 'TRACE';
+
 export type AttNetworkRequest = {
     url: string,
-    method: string,
-    header?: object,
-    body?: any
+    method: HttpMethod,
+    header?: Record<string, string>,
+    body?: string | Record<string, unknown>,
 }
 
 export type AttNetworkResponseResolve = {
@@ -11,6 +22,28 @@ export type AttNetworkResponseResolve = {
     parseType?: string,
     op?: string,
 }
+
+export type AttConditionOp =
+  | 'SHA256_EX'
+  | 'SHA256_WITH_SALT'
+  | 'SHA256'
+  | 'STREQ'
+  | 'STRNEQ'
+  | '>'
+  | '>='
+  | '='
+  | '!='
+  | '<'
+  | '<=';
+
+export type AttConditionItem = {
+    field: string;
+    op: AttConditionOp | (string & {});
+    value?: string;
+};
+
+/** One condition group per network request in batch mode. */
+export type AttConditions = AttConditionItem[][];
 
 export type Attestor = {
     attestorAddr: string,
@@ -45,7 +78,7 @@ export type AttModeInput = {
 export type AttRequestOptions = {
     requestid?: string;
     attMode?: AttModeInput;
-    attConditions?: object;
+    attConditions?: AttConditions;
     additionParams?: string;
     extendedParams?: string;
     sslCipher?: AttSslCipher;
@@ -110,7 +143,10 @@ export type StartAttestationOptions = {
     abortOnProgressError?: boolean;
 }
 
-export type ApiResponse<T = any> = {
+/** Parsed `encodedData` payload returned by {@link PrimusCoreTLS.startAttestation}. */
+export type StartAttestationResult = Record<string, unknown>;
+
+export type ApiResponse<T = unknown> = {
     rc: number;
     mc: string;
     msg: string;

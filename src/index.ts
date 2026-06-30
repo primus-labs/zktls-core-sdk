@@ -11,6 +11,7 @@ import {
   StartAttestationOptions,
   AttestationProgressEvent,
   GenerateRequestParamsOptions,
+  StartAttestationResult,
 } from './index.d'
 import { AttRequest } from './classes/AttRequest'
 import { AlgorithmUrls } from "./classes/AlgorithmUrls";
@@ -499,16 +500,16 @@ class PrimusCoreTLS {
     input: StartAttestationInput,
     timeout?: number,
     algoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
-  ): Promise<any>;
+  ): Promise<StartAttestationResult>;
   async startAttestation(
     input: StartAttestationInput,
     options?: StartAttestationOptions
-  ): Promise<any>;
+  ): Promise<StartAttestationResult>;
   async startAttestation(
     input: StartAttestationInput,
     timeoutOrOptions: number | StartAttestationOptions = 2 * 60 * 1000,
     positionalAlgoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
-  ): Promise<any> {
+  ): Promise<StartAttestationResult> {
     const startOptions = this._resolveStartAttestationOptions(timeoutOrOptions, positionalAlgoUrls);
     let signedAttRequest: SignedAttRequest;
     try {
@@ -671,7 +672,7 @@ class PrimusCoreTLS {
     requestId: string,
     eventReportBaseParams: ReturnType<PrimusCoreTLS['_buildEventReportBaseParams']>,
     startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
-  ): Promise<any> {
+  ): Promise<StartAttestationResult> {
     const { retcode, content, details } = res
     if (retcode === '0') {
       const { balanceGreaterThanBaseValue, signature, encodedData, extraData, privateData } = content
@@ -691,7 +692,7 @@ class PrimusCoreTLS {
           ...eventReportBaseParams,
           status: "SUCCESS",
         })
-        return safeJsonParse(encodedData, {
+        return safeJsonParse<StartAttestationResult>(encodedData, {
           field: 'encodedData',
           fallbackCode: '99999',
           data: res,
@@ -702,6 +703,7 @@ class PrimusCoreTLS {
     } else if (retcode === '2') {
       return this._rejectAlgorithmFailure(res, details, requestId, eventReportBaseParams, startOptions);
     }
+    return Promise.reject(new ZkAttestationError('99999', '', res));
   }
 
   private _resolveProofFailureCode(extraData: unknown, res: any): AttestationErrorCode {
@@ -978,12 +980,18 @@ class PrimusCoreTLS {
 
 export { PrimusCoreTLS, Attestation };
 export type {
+  AttConditionItem,
+  AttConditions,
   AttMode,
   AttModeInput,
+  AttNetworkRequest,
+  AttNetworkResponseResolve,
   AttestationProgressEvent,
   GenerateRequestParamsOptions,
+  HttpMethod,
   PrimusInitOptions,
   StartAttestationInput,
   StartAttestationOptions,
+  StartAttestationResult,
 } from './index.d';
 export type { AlgorithmBackend, AlgorithmLogLevel } from './primus_zk';

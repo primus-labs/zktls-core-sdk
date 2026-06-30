@@ -1,4 +1,5 @@
 import { PrimusCoreTLS } from '../src/index';
+import type { AttNetworkRequest } from '../src/index.d';
 import { getAttestation, getAttestationResult } from '../src/primus_zk';
 
 jest.mock('../src/primus_zk', () => ({
@@ -30,7 +31,7 @@ jest.mock('../src/utils/eventReport', () => ({
   eventReport: jest.fn().mockResolvedValue(undefined),
 }));
 
-const sampleRequest = {
+const sampleRequest: AttNetworkRequest = {
   url: 'https://example.com/api',
   method: 'GET',
   header: {},

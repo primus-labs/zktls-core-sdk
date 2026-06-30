@@ -1,4 +1,4 @@
-import type { AttMode, AttModeInput, AttNetworkRequest, AttNetworkResponseResolve, BaseAttestationParams, AttSslCipher} from '../index.d'
+import type { AttConditions, AttMode, AttModeInput, AttNetworkRequest, AttNetworkResponseResolve, BaseAttestationParams, AttSslCipher} from '../index.d'
 import { getInstanceProperties } from '../utils'
 import { normalizeRequestId } from '../utils/requestId'
 
@@ -11,7 +11,7 @@ export class AttRequest {
   requestid?: string;
   
   attMode?: AttMode;
-  attConditions?: object;
+  attConditions?: AttConditions;
   additionParams?: string;
   extendedParams?: string;
   sslCipher?: AttSslCipher;
@@ -67,7 +67,7 @@ export class AttRequest {
       resultType,
     };
   }
-  setAttConditions(attConditions: Object) {
+  setAttConditions(attConditions: AttConditions) {
     this.attConditions = attConditions
   }
   setSslCipher(sslCipher :AttSslCipher) {

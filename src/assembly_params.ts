@@ -1,12 +1,6 @@
-import { AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, StartAttestationOptions } from './index.d';
+import { AttConditionItem, AttConditions, AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, StartAttestationOptions } from './index.d';
 import { AlgorithmUrls } from './classes/AlgorithmUrls';
 import { normalizeRequestId } from './utils/requestId';
-
-interface AttConditionItem {
-    field: string;
-    op: string;
-    value: string;
-}
 type AssemblyOptions = Pick<Required<StartAttestationOptions>, 'proveLargeData' | 'offlineTimeout'>;
 
 export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUrls, options: AssemblyOptions) {
@@ -49,7 +43,7 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
         reqType: "web",
         host,
         requests: assemblyRequest(request),
-        responses: assemblyResponse(responseResolves, (attConditions as AttConditionItem[][])),
+        responses: assemblyResponse(responseResolves, attConditions),
         templateId: "",
         padoExtensionVersion: "0.3.21",
         cipher: sslCipher,
@@ -100,7 +94,7 @@ function _getType(op?: string) {
     return "FIELD_REVEAL"
 }
 
-function assemblyResponse(responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][], attConditions: AttConditionItem[][] = []) {
+function assemblyResponse(responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][], attConditions: AttConditions = []) {
     const groups = Array.isArray(responseResolves[0])
         ? responseResolves as AttNetworkResponseResolve[][]
         : [responseResolves as AttNetworkResponseResolve[]];
@@ -115,7 +109,7 @@ function assemblyResponse(responseResolves: AttNetworkResponseResolve[] | AttNet
                 const matchingCondition = urlItemConditions.find((cond) => cond.field === keyName);
                 if (matchingCondition) {
                     itemOp = matchingCondition.op;
-                    itemValue = matchingCondition.value;
+                    itemValue = matchingCondition.value ?? '';
                 }
             }
             return {
