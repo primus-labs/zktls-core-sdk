@@ -336,7 +336,7 @@ describe('startAttestation batch param validation', () => {
 
   const baseRequest = {
     url: 'https://example.com/api',
-    method: 'GET' as const,
+    method: 'GET',
     header: {},
     body: '',
   };

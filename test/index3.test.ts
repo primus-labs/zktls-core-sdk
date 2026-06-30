@@ -16,7 +16,7 @@ describe('test', () => {
             const result = await zkTLS.init(appId, appSecret);
             console.log("-------------init result=", result);
 
-            let request = [
+            const request = [
                 {
                     url: "https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USD",
                     method: "GET",

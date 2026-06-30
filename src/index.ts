@@ -980,6 +980,10 @@ class PrimusCoreTLS {
 
 export { PrimusCoreTLS, Attestation };
 export type {
+  AttConditionExpansion,
+  AttConditionOp,
+  AttConditionType,
+  AttFieldCondition,
   AttConditionItem,
   AttConditions,
   AttMode,

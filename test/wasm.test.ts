@@ -18,7 +18,7 @@ describe('test', () => {
                 backend: 'wasm'});
             console.log("-------------init result=", result);
 
-            let request = [
+            const request = [
                 {
                     url: "https://edith.xiaohongshu.com/api/sns/web/v1/system/config",
                     method: "GET",

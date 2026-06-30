@@ -11,7 +11,7 @@ export type HttpMethod =
 
 export type AttNetworkRequest = {
     url: string,
-    method: HttpMethod,
+    method: HttpMethod | (string & Record<never, never>),
     header?: Record<string, string>,
     body?: string | Record<string, unknown>,
 }
@@ -27,8 +27,12 @@ export type AttConditionOp =
   | 'SHA256_EX'
   | 'SHA256_WITH_SALT'
   | 'SHA256'
+  | 'REVEAL_STRING'
   | 'STREQ'
   | 'STRNEQ'
+  | 'STRCASEEQ'
+  | 'STRCASENEQ'
+  | 'MATCH_ONE'
   | '>'
   | '>='
   | '='
@@ -36,11 +40,29 @@ export type AttConditionOp =
   | '<'
   | '<=';
 
-export type AttConditionItem = {
+export type AttConditionType =
+  | 'FIELD_RANGE'
+  | 'FIELD_REVEAL'
+  | 'FIELD_VALUE'
+  | 'FIELD_ARITHMETIC'
+  | 'CONDITION_EXPANSION';
+
+export type AttFieldCondition = {
+    type?: Exclude<AttConditionType, 'CONDITION_EXPANSION'>;
     field: string;
-    op: AttConditionOp | (string & {});
+    op: AttConditionOp | (string & Record<never, never>);
     value?: string;
 };
+
+export type AttConditionExpansion = {
+    type: 'CONDITION_EXPANSION';
+    op: 'MATCH_ONE';
+    key: string;
+    field: string;
+    value: AttFieldCondition[];
+};
+
+export type AttConditionItem = AttFieldCondition | AttConditionExpansion;
 
 /** One condition group per network request in batch mode. */
 export type AttConditions = AttConditionItem[][];
@@ -144,7 +166,7 @@ export type StartAttestationOptions = {
 }
 
 /** Parsed `encodedData` payload returned by {@link PrimusCoreTLS.startAttestation}. */
-export type StartAttestationResult = Record<string, unknown>;
+export type StartAttestationResult = Attestation & Record<string, unknown>;
 
 export type ApiResponse<T = unknown> = {
     rc: number;

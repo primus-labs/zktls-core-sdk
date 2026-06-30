@@ -13,7 +13,7 @@ describe('test', () => {
             const result = await zkTLS.init(appId, appSecret);
             console.log("-------------init result=", result);
             
-            let request = {
+            const request = {
                 url: "https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=bitcoin&names=Bitcoin&symbols=btc&include_last_updated_at=true",
                 method: "GET",
                 header: {

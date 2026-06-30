@@ -1,4 +1,4 @@
-import { AttConditionItem, AttConditions, AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, StartAttestationOptions } from './index.d';
+import { AttConditionExpansion, AttConditionItem, AttConditions, AttNetworkRequest, AttNetworkResponseResolve, SignedAttRequest, StartAttestationOptions } from './index.d';
 import { AlgorithmUrls } from './classes/AlgorithmUrls';
 import { normalizeRequestId } from './utils/requestId';
 type AssemblyOptions = Pick<Required<StartAttestationOptions>, 'proveLargeData' | 'offlineTimeout'>;
@@ -86,12 +86,16 @@ function _getOp(op?: string) {
     return op ? op: 'REVEAL_STRING';
 }
 function _getType(op?: string) {
-    if (['>', '>=', '=', '!=', '<', '<=', 'STREQ', 'STRNEQ'].includes(op ?? "")) {
+    if (['>', '>=', '=', '!=', '<', '<=', 'STREQ', 'STRNEQ', 'STRCASEEQ', 'STRCASENEQ'].includes(op ?? '')) {
         return 'FIELD_RANGE';
     } else if (op === 'SHA256') {
         return "FIELD_VALUE"
     }
     return "FIELD_REVEAL"
+}
+
+function isMatchOneCondition(condition: AttConditionItem): condition is AttConditionExpansion {
+    return condition.op === 'MATCH_ONE';
 }
 
 function assemblyResponse(responseResolves: AttNetworkResponseResolve[] | AttNetworkResponseResolve[][], attConditions: AttConditions = []) {
@@ -106,8 +110,21 @@ function assemblyResponse(responseResolves: AttNetworkResponseResolve[] | AttNet
             const { keyName, parsePath } = rR;
             if (urlItemConditions && Array.isArray(urlItemConditions)) {
                 // Find matching condition by field name
-                const matchingCondition = urlItemConditions.find((cond) => cond.field === keyName);
+                const matchingCondition = urlItemConditions.find((cond) => {
+                    if (isMatchOneCondition(cond)) {
+                        return cond.key === keyName;
+                    }
+                    return cond.field === keyName;
+                });
                 if (matchingCondition) {
+                    if (isMatchOneCondition(matchingCondition)) {
+                        return {
+                            type: matchingCondition.type,
+                            op: matchingCondition.op,
+                            field: matchingCondition.field,
+                            subconditions: matchingCondition.value,
+                        };
+                    }
                     itemOp = matchingCondition.op;
                     itemValue = matchingCondition.value ?? '';
                 }
