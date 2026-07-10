@@ -33,6 +33,24 @@
                         },
                     },
                 ],
+                [
+                    "OS=='win'",
+                    {
+                        "libraries": ["<(module_root_dir)/native/primus-zk.lib"],
+                        "msvs_settings": {
+                            "VCCLCompilerTool": {
+                                "ExceptionHandling": 1,
+                                "AdditionalOptions": ["/std:c++17"]
+                            }
+                        },
+                        "copies": [
+                            {
+                                "destination": "<(PRODUCT_DIR)",
+                                "files": ["<(module_root_dir)/native/primus-zk.dll"]
+                            }
+                        ],
+                    },
+                ],
             ],
         }
     ]
