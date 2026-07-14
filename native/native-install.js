@@ -9,8 +9,8 @@ function isMacOSArm64() {
   return platform === 'darwin' && arch === 'arm64';
 }
 
-function isWindows() {
-  return platform === 'win32';
+function isWindowsX64() {
+  return platform === 'win32' && arch === 'x64';
 }
 
 function isUbuntu() {
@@ -26,7 +26,7 @@ function isUbuntu() {
   }
 }
 
-if (isMacOSArm64() || isUbuntu() || isWindows()) {
+if (isMacOSArm64() || isUbuntu() || isWindowsX64()) {
   console.log('[native-addon] Building native module...');
   try {
     child_process.execSync('node-gyp rebuild', { stdio: 'inherit' });
