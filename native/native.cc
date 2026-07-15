@@ -16,8 +16,18 @@ std::string __callAlgorithm(const std::string &input) {
 using RpcCallback = std::function<char *(const char *)>;
 using StreamCallback = std::function<void(const uint8_t *, uint32_t)>;
 extern "C" {
+#ifdef _WIN32
+// primus-zk.dll is MinGW/libstdc++ while this addon is MSVC: only plain C
+// types may cross the boundary — the two STLs' std::function layouts are
+// incompatible (extern "C" strips the signature, so a mismatch links fine
+// and corrupts at runtime). Matches pado-core pado/programs/js_plugin.cpp.
+// The captureless lambdas below convert to these pointers implicitly.
+void register_rpc_callback(char *(*cb)(const char *));
+void register_stream_callback(void (*cb)(const uint8_t *, uint32_t));
+#else
 void register_rpc_callback(RpcCallback cb);
 void register_stream_callback(StreamCallback cb);
+#endif
 void unregister_rpc_callback();
 void unregister_stream_callback();
 }
