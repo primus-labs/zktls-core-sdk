@@ -1,0 +1,111 @@
+name: Release
+
+# Manually triggered build + publish to the npm registry.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish: a semver bump (patch|minor|major|prerelease), an explicit version (e.g. 0.4.0), or "none" to publish package.json as-is'
+        required: true
+        default: 'none'
+        type: string
+      npm_tag:
+        description: 'npm dist-tag'
+        required: true
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - beta
+          - next
+      dry_run:
+        description: 'Dry run (build + pack, no publish)'
+        required: false
+        default: false
+        type: boolean
+      push_version_commit:
+        description: 'Commit the version bump and push a git tag (ignored when version=none or dry_run)'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      # --ignore-scripts skips the `install` hook (node-gyp rebuild of the
+      # native addon), which is not needed to build or publish the package.
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure git
+        if: inputs.version != 'none' && inputs.push_version_commit && !inputs.dry_run
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        if: inputs.version != 'none'
+        run: |
+          if [ "${{ inputs.push_version_commit }}" = "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            npm version "${{ inputs.version }}" -m "chore: release v%s"
+          else
+            npm version "${{ inputs.version }}" --no-git-tag-version
+          fi
+
+      - name: Resolve version
+        id: pkg
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Pack (dry run)
+        if: inputs.dry_run
+        run: npm publish --access public --ignore-scripts --dry-run --tag "${{ inputs.npm_tag }}"
+
+      - name: Publish to npm
+        if: '!inputs.dry_run'
+        run: npm publish --access public --ignore-scripts --tag "${{ inputs.npm_tag }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push version commit and tag
+        if: inputs.version != 'none' && inputs.push_version_commit && !inputs.dry_run
+        run: git push --follow-tags
+
+      - name: Create GitHub release
+        if: inputs.version != 'none' && inputs.push_version_commit && !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.pkg.outputs.version }}" \
+            --title "v${{ steps.pkg.outputs.version }}" \
+            --generate-notes \
+            ${{ inputs.npm_tag != 'latest' && '--prerelease' || '' }}
+
+      - name: Summary
+        run: |
+          {
+            echo "### Release"
+            echo ""
+            echo "- package: \`$(node -p "require('./package.json').name")\`"
+            echo "- version: \`${{ steps.pkg.outputs.version }}\`"
+            echo "- dist-tag: \`${{ inputs.npm_tag }}\`"
+            echo "- dry run: \`${{ inputs.dry_run }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
