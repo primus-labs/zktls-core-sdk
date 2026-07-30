@@ -141,9 +141,9 @@ export class AlgorithmUrls {
       const timeoutId = setTimeout(() => resolveOnce(), wsTimeoutMs);
       ws.onopen = function () {
         resolveOnce({
-          primusMpcUrl: `wss://${node.algorithmDomain}/algorithm`,
-          primusProxyUrl: `wss://${node.algorithmDomain}/algorithm-proxy`,
-          proxyUrl: `wss://${node.algoProxyDomain}/algoproxy`,
+          primusMpcUrl: `wss://${node.algorithmDomain}/algorithm-reqref`,
+          primusProxyUrl: `wss://${node.algorithmDomain}/algorithm-proxy-reqref`,
+          proxyUrl: `wss://${node.algoProxyDomain}/algoproxy-reqref`,
         });
       };
       ws.onerror = function () {
