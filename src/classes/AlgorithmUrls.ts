@@ -127,7 +127,7 @@ export class AlgorithmUrls {
   private probeNode(node: AlgorithmNode, wsTimeoutMs: number): Promise<ResolvedAlgorithmUrls | undefined> {
     return new Promise((resolve) => {
       const WebSocketCtor = resolveWebSocketCtor();
-      const ws = new WebSocketCtor(`wss://${node.algoProxyDomain}/algoproxy`);
+      const ws = new WebSocketCtor(`wss://${node.algoProxyDomain}/algoproxy-reqref`);
       let settled = false;
       function resolveOnce(urls?: ResolvedAlgorithmUrls) {
         if (settled) {
@@ -156,7 +156,6 @@ export class AlgorithmUrls {
     return JSON.stringify(getInstanceProperties(this));
   }
 }
-
 
 
 
