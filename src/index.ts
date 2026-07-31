@@ -754,7 +754,24 @@ class PrimusCoreTLS {
   }
 
   private _resolveAlgorithmError(details: any): { code: string; subCode?: string } {
-    const { errlog: { code: rawCode, desc: detailsDesc } = {} } = details || {};
+    // Native records stage errors even when the top-level status has not yet
+    // advanced to ERROR. Prefer its top-level value when meaningful, but keep
+    // the stage-specific error instead of turning a real failure into code 0.
+    const hasUsableCode = (errlog: any): boolean => {
+      const code = errlog?.code;
+      return code != null && String(code).trim() !== '' && Number(code) !== 0;
+    };
+    const topLevelErrlog = details?.errlog;
+    const offlineErrlog = details?.offline?.errlog;
+    const onlineErrlog = details?.online?.errlog;
+    // Match native's top-level selection: offline wins when both legs have a
+    // real error, except its explicit 50003 special case prefers online.
+    const stageErrlog = hasUsableCode(offlineErrlog) &&
+      hasUsableCode(onlineErrlog) && Number(offlineErrlog.code) === 50003
+      ? onlineErrlog
+      : [offlineErrlog, onlineErrlog].find(hasUsableCode);
+    const errlog = hasUsableCode(topLevelErrlog) ? topLevelErrlog : stageErrlog || topLevelErrlog || {};
+    const { code: rawCode, desc: detailsDesc } = errlog;
     const rawNum = rawCode != null && rawCode !== '' ? Number(rawCode) : NaN;
     const mapped50000Sub = ALGO_ERR_NORMALIZE_TO_50000[rawNum];
     let resolvedCode =
