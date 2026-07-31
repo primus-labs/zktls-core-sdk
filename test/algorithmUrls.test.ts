@@ -10,6 +10,7 @@ jest.mock('../src/utils', () => ({
 type WebSocketBehavior = 'open' | 'error' | 'timeout';
 
 const wsBehaviorByDomain = new Map<string, WebSocketBehavior>();
+const webSocketUrls: string[] = [];
 
 class FakeWebSocket {
   url: string;
@@ -19,6 +20,7 @@ class FakeWebSocket {
 
   constructor(url: string) {
     this.url = url;
+    webSocketUrls.push(url);
     const domain = url.replace(/^wss:\/\//, '').split('/')[0];
     const behavior = wsBehaviorByDomain.get(domain) ?? 'open';
 
@@ -61,6 +63,7 @@ describe('AlgorithmUrls.fetchNodes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     wsBehaviorByDomain.clear();
+    webSocketUrls.length = 0;
     global.WebSocket = FakeWebSocket as unknown as typeof WebSocket;
   });
 
@@ -77,9 +80,13 @@ describe('AlgorithmUrls.fetchNodes', () => {
 
     expect(result).toBe(true);
     expect(sendRequest).toHaveBeenCalledTimes(1);
-    expect(algoUrls.primusMpcUrl).toBe('wss://algo-a.example.com/algorithm');
-    expect(algoUrls.primusProxyUrl).toBe('wss://algo-a.example.com/algorithm-proxy');
-    expect(algoUrls.proxyUrl).toBe('wss://proxy-a.example.com/algoproxy');
+    expect(webSocketUrls).toEqual(expect.arrayContaining([
+      'wss://proxy-a.example.com/algoproxy-reqref',
+    ]));
+    expect(webSocketUrls.every((url) => url.endsWith('/algoproxy-reqref'))).toBe(true);
+    expect(algoUrls.primusMpcUrl).toBe('wss://algo-a.example.com/algorithm-reqref');
+    expect(algoUrls.primusProxyUrl).toBe('wss://algo-a.example.com/algorithm-proxy-reqref');
+    expect(algoUrls.proxyUrl).toBe('wss://proxy-a.example.com/algoproxy-reqref');
   });
 
   it('selects the first reachable node when earlier nodes fail websocket probes', async () => {
@@ -95,9 +102,9 @@ describe('AlgorithmUrls.fetchNodes', () => {
     });
 
     expect(result).toBe(true);
-    expect(algoUrls.primusMpcUrl).toBe('wss://algo-b.example.com/algorithm');
-    expect(algoUrls.primusProxyUrl).toBe('wss://algo-b.example.com/algorithm-proxy');
-    expect(algoUrls.proxyUrl).toBe('wss://proxy-b.example.com/algoproxy');
+    expect(algoUrls.primusMpcUrl).toBe('wss://algo-b.example.com/algorithm-reqref');
+    expect(algoUrls.primusProxyUrl).toBe('wss://algo-b.example.com/algorithm-proxy-reqref');
+    expect(algoUrls.proxyUrl).toBe('wss://proxy-b.example.com/algoproxy-reqref');
   });
 
   it('retries after a failed node list request and succeeds on the next attempt', async () => {
@@ -116,7 +123,7 @@ describe('AlgorithmUrls.fetchNodes', () => {
 
     expect(result).toBe(true);
     expect(sendRequest).toHaveBeenCalledTimes(2);
-    expect(algoUrls.primusMpcUrl).toBe('wss://algo-a.example.com/algorithm');
+    expect(algoUrls.primusMpcUrl).toBe('wss://algo-a.example.com/algorithm-reqref');
   });
 
   it('retries when all nodes are unreachable and eventually returns false', async () => {
@@ -174,7 +181,7 @@ describe('AlgorithmUrls.fetchNodes', () => {
     });
 
     expect(result).toBe(true);
-    expect(algoUrls.primusMpcUrl).toBe('wss://algo-a.example.com/algorithm');
+    expect(algoUrls.primusMpcUrl).toBe('wss://algo-a.example.com/algorithm-reqref');
   });
 
   it('waits with incremental backoff between retry attempts', async () => {

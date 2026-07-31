@@ -17,6 +17,7 @@ export class AttRequest {
   sslCipher?: AttSslCipher;
   noProxy?: boolean;
   requestInterval?: number; // in milliseconds
+  requestReference?: 'sha256-v1';
 
   constructor(baseAttestationParams: BaseAttestationParams) {
     const {
@@ -32,6 +33,7 @@ export class AttRequest {
       sslCipher,
       noProxy,
       requestInterval,
+      requestReference,
     } = baseAttestationParams
     this.appId = appId
     this.userAddress = userAddress
@@ -54,6 +56,7 @@ export class AttRequest {
     this.sslCipher = sslCipher ?? "ECDHE-RSA-AES128-GCM-SHA256";
     this.noProxy = noProxy ?? true;
     this.requestInterval = requestInterval ?? -1;
+    this.requestReference = requestReference;
   }
   setAdditionParams(additionParams: string) {
     this.additionParams = additionParams
@@ -86,6 +89,5 @@ export class AttRequest {
     return JSON.stringify(getInstanceProperties(this));
   }
 }
-
 
 

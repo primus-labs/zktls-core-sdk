@@ -106,6 +106,8 @@ export type AttRequestOptions = {
     sslCipher?: AttSslCipher;
     noProxy?: boolean;
     requestInterval?: number;
+    /** Opt in to a client-committed request reference; omitted means legacy full-body attestation. */
+    requestReference?: 'sha256-v1';
 }
 
 export type BaseAttestationParams = {

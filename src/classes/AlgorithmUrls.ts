@@ -127,7 +127,7 @@ export class AlgorithmUrls {
   private probeNode(node: AlgorithmNode, wsTimeoutMs: number): Promise<ResolvedAlgorithmUrls | undefined> {
     return new Promise((resolve) => {
       const WebSocketCtor = resolveWebSocketCtor();
-      const ws = new WebSocketCtor(`wss://${node.algoProxyDomain}/algoproxy`);
+      const ws = new WebSocketCtor(`wss://${node.algoProxyDomain}/algoproxy-reqref`);
       let settled = false;
       function resolveOnce(urls?: ResolvedAlgorithmUrls) {
         if (settled) {
@@ -141,9 +141,9 @@ export class AlgorithmUrls {
       const timeoutId = setTimeout(() => resolveOnce(), wsTimeoutMs);
       ws.onopen = function () {
         resolveOnce({
-          primusMpcUrl: `wss://${node.algorithmDomain}/algorithm`,
-          primusProxyUrl: `wss://${node.algorithmDomain}/algorithm-proxy`,
-          proxyUrl: `wss://${node.algoProxyDomain}/algoproxy`,
+          primusMpcUrl: `wss://${node.algorithmDomain}/algorithm-reqref`,
+          primusProxyUrl: `wss://${node.algorithmDomain}/algorithm-proxy-reqref`,
+          proxyUrl: `wss://${node.algoProxyDomain}/algoproxy-reqref`,
         });
       };
       ws.onerror = function () {
@@ -156,7 +156,6 @@ export class AlgorithmUrls {
     return JSON.stringify(getInstanceProperties(this));
   }
 }
-
 
 
 
