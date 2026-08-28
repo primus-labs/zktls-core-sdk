@@ -68,6 +68,7 @@ export const ErrorCodeMAP = {
   '50011': 'Unsupported TLS version. Contact Primus Team for assistance.',
   '99999': 'Undefined error. Please try again later.',
   '99999:001': 'Undefined error. Please try again later.',
+  '-1200010': 'Invalid message.',
   '-1002001': 'Invalid app ID.',
   '-1002002': 'Invalid app secret.',
   '-1002003': 'Trial quota exhausted.',
