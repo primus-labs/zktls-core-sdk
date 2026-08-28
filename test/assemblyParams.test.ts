@@ -114,3 +114,39 @@ describe('assemblyParams attConditions', () => {
     ]);
   });
 });
+
+describe('assemblyParams request headers', () => {
+  const withHeader = (header: Record<string, string>): SignedAttRequest => ({
+    ...baseSignedAttRequest,
+    attRequest: {
+      ...baseSignedAttRequest.attRequest,
+      request: { ...baseSignedAttRequest.attRequest.request, header },
+    },
+  });
+
+  it('keeps a single Accept-Encoding whatever casing the caller used', () => {
+    const { headers } = assemblyParams(
+      withHeader({ 'accept-encoding': 'gzip, deflate, br' }),
+      algorithmUrls,
+      options
+    ).requests[0];
+
+    expect(Object.keys(headers).filter((key) => key.toLowerCase() === 'accept-encoding')).toEqual([
+      'Accept-Encoding',
+    ]);
+    expect(headers['Accept-Encoding']).toBe('identity');
+  });
+
+  it('leaves the other request headers untouched', () => {
+    const { headers } = assemblyParams(
+      withHeader({ Authorization: 'Bearer token', 'ACCEPT-ENCODING': 'br' }),
+      algorithmUrls,
+      options
+    ).requests[0];
+
+    expect(headers).toEqual({
+      Authorization: 'Bearer token',
+      'Accept-Encoding': 'identity',
+    });
+  });
+});

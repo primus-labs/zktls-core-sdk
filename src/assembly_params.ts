@@ -60,13 +60,24 @@ function assemblyRequest(request: AttNetworkRequest | AttNetworkRequest[]) {
     return requests.map(({ url, header, method, body }, idx) => ({
         url,
         method,
-        headers: {
-            ...header,
-            'Accept-Encoding': 'identity',
-        },
+        headers: withIdentityEncoding(header),
         body,
         name: `${url}-${idx}`
     }))
+}
+
+// The algorithm needs an unencoded response body, so `Accept-Encoding: identity`
+// has to win over whatever the caller passed. Header names are case-insensitive,
+// so drop any other spelling before adding the canonical one.
+function withIdentityEncoding(header?: Record<string, string>) {
+    const headers: Record<string, string> = {};
+    for (const [key, value] of Object.entries(header ?? {})) {
+        if (key.toLowerCase() !== 'accept-encoding') {
+            headers[key] = value;
+        }
+    }
+    headers['Accept-Encoding'] = 'identity';
+    return headers;
 }
 
 function _getField(parsePath: string, op?: string) {
