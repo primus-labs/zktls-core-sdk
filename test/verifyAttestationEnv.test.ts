@@ -30,4 +30,16 @@ describe('environment-specific attestation verification', () => {
 
     expect(client.verifyAttestation(attestation)).toBe(true);
   });
+
+  it('safely returns false on invalid or malformed inputs without throwing', () => {
+    const client = new PrimusCoreTLS();
+
+    expect(client.verifyAttestation(null as any)).toBe(false);
+    expect(client.verifyAttestation(undefined as any)).toBe(false);
+    expect(client.verifyAttestation({} as any)).toBe(false);
+    expect(client.verifyAttestation({ signatures: [] } as any)).toBe(false);
+    expect(client.verifyAttestation({ signatures: [null] } as any)).toBe(false);
+    expect(client.verifyAttestation({ signatures: ['0xinvalid'] } as any)).toBe(false);
+    expect(client.verifyAttestation({ signatures: ['0x1234'] } as any)).toBe(false);
+  });
 });
