@@ -92,10 +92,6 @@ export async function request<T = any>(config: RequestConfig): Promise<T> {
       signal: controller.signal
     });
 
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-
     const responseData = await readResponseData(response, responseType);
 
     if (!response.ok) {
@@ -108,10 +104,6 @@ export async function request<T = any>(config: RequestConfig): Promise<T> {
 
     return responseData as T;
   } catch (error: any) {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-
     if (error.name === 'AbortError') {
       const timeoutError = new Error(`Request timeout after ${timeout}ms`) as any;
       timeoutError.code = 'TIMEOUT';
@@ -125,5 +117,9 @@ export async function request<T = any>(config: RequestConfig): Promise<T> {
     }
 
     throw error;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
