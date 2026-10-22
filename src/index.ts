@@ -922,11 +922,24 @@ class PrimusCoreTLS {
   }
 
   verifyAttestation(attestation: Attestation): boolean {
-    const encodeData = encodeAttestation(attestation);
-    const signature = attestation.signatures[0];
-    const result = ethers.utils.recoverAddress(encodeData, signature);
-    const verifyResult = PADO_ADDRESS.toLowerCase() === result.toLowerCase();
-    return verifyResult
+    try {
+      if (!attestation || !Array.isArray(attestation.signatures) || attestation.signatures.length === 0) {
+        return false;
+      }
+      const signature = attestation.signatures[0];
+      if (!signature || typeof signature !== 'string') {
+        return false;
+      }
+      const encodeData = encodeAttestation(attestation);
+      const result = ethers.utils.recoverAddress(encodeData, signature);
+      const expectedAddress = PADO_ADDRESS;
+      if (!expectedAddress || !result) {
+        return false;
+      }
+      return expectedAddress.toLowerCase() === result.toLowerCase();
+    } catch {
+      return false;
+    }
   }
 
   /**
