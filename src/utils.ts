@@ -1,5 +1,5 @@
 import { Attestation, AttNetworkRequest, AttNetworkResponseResolve } from './index.d'
-const { ethers } = require("ethers");
+import { ethers } from 'ethers';
 
 export function isValidNumericString(value: string) {  
     const regex = /^[0-9]*$/; 
