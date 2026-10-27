@@ -84,7 +84,7 @@ export type Attestation = {
     signatures: string[],
 }
 
-export type AttModeAlgorithmType = 'mpctls' | 'proxytls'
+export type AttModeAlgorithmType = 'mpctls' | 'proxytls' | 'teetls'
 export type AttModeResultType = 'plain' | 'cipher'
 export type AttSslCipher = 'ECDHE-RSA-AES128-GCM-SHA256' | 'ECDHE-ECDSA-AES128-GCM-SHA256'
 export type AttMode = {

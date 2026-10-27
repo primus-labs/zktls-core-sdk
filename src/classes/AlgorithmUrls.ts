@@ -1,5 +1,5 @@
 import { sendRequest, getInstanceProperties } from '../utils';
-import { BASE_SERVICE_URL, PRIMUS_PROXY_URL, PROXY_URL, PRIMUS_MPC_URL } from '../config/env';
+import { BASE_SERVICE_URL, PRIMUS_PROXY_URL, PROXY_URL, PRIMUS_MPC_URL, PRIMUS_TEE_URL } from '../config/env';
 
 type AlgorithmNode = {
   algorithmDomain: string;
@@ -60,12 +60,14 @@ function resolveWebSocketCtor(): WebSocketConstructor {
 
 export class AlgorithmUrls {
   primusMpcUrl: string; // PADOURL
+  primusTeeUrl: string; // PADOTEEURL
   primusProxyUrl: string;// ZKPADOURL
   proxyUrl: string; // PROXYURL
 
   constructor() {
     this.primusMpcUrl = PRIMUS_MPC_URL;
     this.primusProxyUrl = PRIMUS_PROXY_URL;
+    this.primusTeeUrl = PRIMUS_TEE_URL;
     this.proxyUrl = PROXY_URL;
   }
 
@@ -78,6 +80,7 @@ export class AlgorithmUrls {
         if (selectedUrls) {
           this.primusMpcUrl = selectedUrls.primusMpcUrl;
           this.primusProxyUrl = selectedUrls.primusProxyUrl;
+          // this.primusTeeUrl = selectedUrls.primusTeeUrl;
           this.proxyUrl = selectedUrls.proxyUrl;
           return true;
         }

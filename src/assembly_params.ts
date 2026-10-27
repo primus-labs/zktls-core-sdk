@@ -4,7 +4,8 @@ import { normalizeRequestId } from './utils/requestId';
 type AssemblyOptions = Pick<Required<StartAttestationOptions>, 'proveLargeData' | 'offlineTimeout'>;
 
 export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUrls, options: AssemblyOptions) {
-    let { primusMpcUrl, primusProxyUrl, proxyUrl } = algorithmUrls
+    let { primusMpcUrl, primusProxyUrl, proxyUrl, primusTeeUrl } = algorithmUrls
+    // console.log('algorithmUrls',  algorithmUrls);
     let padoUrl = primusProxyUrl;
     let modelType = "proxytls";
     const { attRequest: { request, responseResolves, attMode, userAddress, appId, additionParams, sslCipher, noProxy, requestInterval, attConditions, requestid: inputRequestId }, appSignature } = att
@@ -17,6 +18,9 @@ export function assemblyParams(att: SignedAttRequest, algorithmUrls: AlgorithmUr
         if (noProxy) {
             proxyUrl = ""; // only supported under mpctls model
         }
+    } else if (attMode?.algorithmType === "teetls") {
+        modelType = "teetls";
+        padoUrl = primusTeeUrl;
     }
     // console.log('assemblyParams', padoUrl, proxyUrl, modelType);
     let timestamp = (+ new Date()).toString();
