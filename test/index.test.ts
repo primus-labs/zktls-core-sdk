@@ -32,7 +32,7 @@ describe('test', () => {
     //         console.log("-------------init result=", result);
 
     //         let request = {
-    //             url: "https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USD",
+    //             url: "https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USDT",
     //             method: "GET",
     //             header: {},
     //             body: "",
@@ -78,7 +78,7 @@ describe('test', () => {
 
             const request = [
                 {
-                    url: "https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USD",
+                    url: "https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USDT",
                     method: "GET",
                     header: {},
                     body: "",

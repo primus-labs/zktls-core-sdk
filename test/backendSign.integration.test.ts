@@ -46,7 +46,7 @@ const close = (server: Server): Promise<void> => {
 const buildDemoAttRequest = (client: PrimusCoreTLS) => {
   const request = [
     {
-      url: 'https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USD',
+      url: 'https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USDT',
       method: 'GET',
       header: {},
       body: '',
