@@ -6,7 +6,7 @@ type AlgorithmNode = {
   algoProxyDomain: string;
 };
 
-type ResolvedAlgorithmUrls = Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>;
+type ResolvedAlgorithmUrls = Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusTeeUrl' | 'primusProxyUrl' | 'proxyUrl'>;
 
 export type FetchNodesOptions = {
   maxRetries?: number;
@@ -145,6 +145,7 @@ export class AlgorithmUrls {
       ws.onopen = function () {
         resolveOnce({
           primusMpcUrl: `wss://${node.algorithmDomain}/algorithm`,
+          primusTeeUrl: `wss://${node.algorithmDomain}/algorithm/teetls`,
           primusProxyUrl: `wss://${node.algorithmDomain}/algorithm-proxy`,
           proxyUrl: `wss://${node.algoProxyDomain}/algoproxy`,
         });

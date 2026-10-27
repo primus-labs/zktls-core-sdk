@@ -469,7 +469,7 @@ class PrimusCoreTLS {
   /** Same shape as {@link AlgorithmUrls}: primusMpcUrl, primusProxyUrl, proxyUrl (non-empty, parseable URLs). */
   private _isValidAlgoUrlsLike(
     value: unknown
-  ): value is Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'> {
+  ): value is Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusTeeUrl' | 'primusProxyUrl' | 'proxyUrl'> {
     if (value === null || typeof value !== 'object') {
       return false
     }
@@ -499,7 +499,7 @@ class PrimusCoreTLS {
   async startAttestation(
     input: StartAttestationInput,
     timeout?: number,
-    algoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
+    algoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusTeeUrl' | 'primusProxyUrl' | 'proxyUrl'>
   ): Promise<StartAttestationResult>;
   async startAttestation(
     input: StartAttestationInput,
@@ -508,7 +508,7 @@ class PrimusCoreTLS {
   async startAttestation(
     input: StartAttestationInput,
     timeoutOrOptions: number | StartAttestationOptions = 2 * 60 * 1000,
-    positionalAlgoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
+    positionalAlgoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusTeeUrl' | 'primusProxyUrl' | 'proxyUrl'>
   ): Promise<StartAttestationResult> {
     const startOptions = this._resolveStartAttestationOptions(timeoutOrOptions, positionalAlgoUrls);
     let signedAttRequest: SignedAttRequest;
@@ -834,7 +834,7 @@ class PrimusCoreTLS {
 
   private _resolveStartAttestationOptions(
     timeoutOrOptions: number | StartAttestationOptions,
-    positionalAlgoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>
+    positionalAlgoUrls?: Pick<AlgorithmUrls, 'primusMpcUrl' | 'primusTeeUrl' | 'primusProxyUrl' | 'proxyUrl'>
   ): Required<Omit<StartAttestationOptions, 'algoUrls' | 'onProgress'>> &
     Pick<StartAttestationOptions, 'algoUrls' | 'onProgress'> {
     if (typeof timeoutOrOptions === 'number') {

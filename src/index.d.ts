@@ -156,7 +156,7 @@ export type AttestationProgressEvent =
 
 export type StartAttestationOptions = {
     timeout?: number;
-    algoUrls?: Pick<import('./classes/AlgorithmUrls').AlgorithmUrls, 'primusMpcUrl' | 'primusProxyUrl' | 'proxyUrl'>;
+    algoUrls?: Pick<import('./classes/AlgorithmUrls').AlgorithmUrls, 'primusMpcUrl' | 'primusTeeUrl' | 'primusProxyUrl' | 'proxyUrl'>;
     stream?: boolean;
     proveLargeData?: boolean;
     offlineTimeout?: number;
