@@ -65,7 +65,9 @@ async function initAlgorithm(mode: AlgorithmBackend = 'auto'): Promise<(params: 
   }
 
   if (mode === 'wasm') {
-    return await tryLoadWasm();
+    const wasm = await tryLoadWasm();
+    if (!wasm) throw new Error('WASM mode requested but module failed to load.');
+    return wasm;
   }
 
   // auto
@@ -76,7 +78,9 @@ async function initAlgorithm(mode: AlgorithmBackend = 'auto'): Promise<(params: 
   };
 
   console.log("Use WASM Mode.");
-  return await tryLoadWasm();
+  const wasm = await tryLoadWasm();
+  if (!wasm) throw new Error('Neither native addon nor WASM module could be loaded.');
+  return wasm;
 }
 
 let callAlgorithm = null;
