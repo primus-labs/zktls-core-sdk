@@ -11,7 +11,7 @@ const pEnvMap = {
   test: {
     PRIMUS_PROXY_URL: 'wss://api-dev.padolabs.org/algorithm-proxy',
     PRIMUS_MPC_URL: 'wss://api-dev.padolabs.org/algorithm',
-    PRIMUS_TEE_URL: 'wss://api-dev.padolabs.org/algorithm/teetls',
+    PRIMUS_TEE_URL: 'wss://api-teetls.primuslabs.xyz/algorithm/teetls',
     PROXY_URL: 'wss://api-dev.padolabs.org/algoproxy',
     BASE_SERVICE_URL: 'https://api-dev.padolabs.org',
     PADO_ADDRESS: '0xe02bd7a6c8aa401189aebb5bad755c2610940a73',
