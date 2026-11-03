@@ -140,6 +140,10 @@ describe('test', () => {
             const attestation = await zkTLS.startAttestation(generateRequestParamsRes, 10 * 60 * 1000);
             console.log("attestation=", attestation);
             console.log("attestation.data=", attestation.data);
+            const teeAttestationData = zkTLS.getTeeAttestationData(generateRequestParamsRes.requestid!);
+            console.log("teeAttestationData=", teeAttestationData);
+            expect(teeAttestationData).toEqual(expect.any(String));
+            expect(teeAttestationData).toBeTruthy();
             expect(attestation).toBeTruthy();
             expect(attestation.signatures?.length).toBeGreaterThan(0);
             expect(zkTLS.verifyAttestation(attestation)).toBe(true);

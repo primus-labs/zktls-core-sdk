@@ -57,6 +57,7 @@ class PrimusCoreTLS {
   appSecret?: string;
   algoUrls: AlgorithmUrls
   private _isAttesting: boolean = false;
+  private readonly _teeAttestationData = new Map<string, string>();
   private _allPrivateData: Record<string, string> = {};
   private _concurrency: number = 1;
   private _algorithmPool?: ProcessAlgorithmPool;
@@ -675,7 +676,7 @@ class PrimusCoreTLS {
   ): Promise<StartAttestationResult> {
     const { retcode, content, details } = res
     if (retcode === '0') {
-      const { balanceGreaterThanBaseValue, signature, encodedData, extraData, privateData } = content
+      const { balanceGreaterThanBaseValue, signature, encodedData, extraData, privateData, teeAttestationData } = content
       if (balanceGreaterThanBaseValue === 'true' && signature) {
         if (
           typeof privateData === 'string' &&
@@ -683,6 +684,9 @@ class PrimusCoreTLS {
           requestId.trim() !== ''
         ) {
           this._allPrivateData[requestId] = privateData;
+        }
+        if (typeof teeAttestationData === 'string') {
+          this._teeAttestationData.set(requestId, teeAttestationData);
         }
         await this._emitProgressIfNeeded(startOptions, {
           type: 'proof-ready',
@@ -905,6 +909,10 @@ class PrimusCoreTLS {
         throw error;
       }
     }
+  }
+
+  getTeeAttestationData(requestId: string): string | undefined {
+    return this._teeAttestationData.get(requestId);
   }
 
   getPrivateData(requestId: string, keyName: string): string | undefined {
