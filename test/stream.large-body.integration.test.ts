@@ -36,7 +36,7 @@ const buildLargeBodyTestApiStreamAttRequest = (client: PrimusCoreTLS, payloadSiz
 
   const attRequest = client.generateRequestParams(
     {
-      url: 'https://api-dev.padolabs.org/test-body/body?rspSize=1k&stream=true',
+      url: 'https://postman-echo.com/post',
       method: 'POST',
       header: {
         'Content-Type': 'application/json',

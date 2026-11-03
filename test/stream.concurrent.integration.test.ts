@@ -4,7 +4,7 @@ import type { AttestationProgressEvent } from '../src/index.d';
 const STREAM_TIMEOUT_MS = 10 * 60 * 1000;
 const STREAM_CONCURRENCY = 2;
 const STREAM_REQUEST_COUNT = 2;
-const TEST_API_STREAM_URL = 'https://api-dev.padolabs.org/test-body/body?rspSize=128b&stream=true';
+const TEST_API_STREAM_URL = 'https://postman-echo.com/post';
 
 const requireEnv = (name: string) => {
   const value = process.env[name];

@@ -20,7 +20,7 @@ describe('test', () => {
 
             const request = [
                 {
-                    url: "https://edith.xiaohongshu.com/api/sns/web/v1/system/config",
+                    url: "https://www.okx.com/api/v5/public/instruments?instType=SPOT&instId=BTC-USDT",
                     method: "GET",
                     header: {},
                     body: "",
@@ -33,7 +33,7 @@ describe('test', () => {
                     {
                         keyName: "instType",
                         parseType: "json",
-                        parsePath: "$.code"
+                        parsePath: "$.data[0].instType"
                     }
                 ],
             ];

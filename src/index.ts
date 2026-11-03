@@ -56,6 +56,7 @@ class PrimusCoreTLS {
   appId: string;
   appSecret?: string;
   algoUrls: AlgorithmUrls
+  private _discoveredAlgoUrls?: AlgorithmUrls;
   private _isAttesting: boolean = false;
   private readonly _teeAttestationData = new Map<string, string>();
   private _allPrivateData: Record<string, string> = {};
@@ -86,7 +87,9 @@ class PrimusCoreTLS {
   ): Promise<string | boolean> {
     this.appId = appId
     this.appSecret = appSecret?.trim() ? appSecret : undefined
-    // await this.algoUrls.fetchNodes();
+    const urls = Object.assign(new AlgorithmUrls(), this.algoUrls);
+    await urls.fetchNodes();
+    this._discoveredAlgoUrls = urls;
     const initOptions = this._resolveInitOptions(modeOrOptions);
     this._concurrency = initOptions.concurrency;
     if (this._algorithmPool) {
@@ -490,11 +493,14 @@ class PrimusCoreTLS {
   }
 
   /** Caller must pass `algoUrls` through {@link _validateAttestationParams} first when provided. */
-  private _resolveAlgoUrlsOverride(algoUrlsOverride?: unknown): AlgorithmUrls {
-    if (algoUrlsOverride === undefined || algoUrlsOverride === null) {
-      return this.algoUrls
+  private _resolveAlgoUrls(attRequest: FullAttestationParams, algoUrlsOverride?: unknown): AlgorithmUrls {
+    if (algoUrlsOverride != null) {
+      return algoUrlsOverride as AlgorithmUrls;
     }
-    return algoUrlsOverride as AlgorithmUrls
+    if (attRequest.attMode?.algorithmType === 'teetls') {
+      return this.algoUrls;
+    }
+    return this._discoveredAlgoUrls ?? this.algoUrls;
   }
 
   async startAttestation(
@@ -593,7 +599,7 @@ class PrimusCoreTLS {
     input: StartAttestationInput,
     startOptions: ReturnType<PrimusCoreTLS['_resolveStartAttestationOptions']>
   ) {
-    const effectiveAlgoUrls = this._resolveAlgoUrlsOverride(startOptions.algoUrls);
+    const effectiveAlgoUrls = this._resolveAlgoUrls(signedAttRequest.attRequest, startOptions.algoUrls);
     const attParams = {
       ...assemblyParams(signedAttRequest, effectiveAlgoUrls, startOptions),
       stream: startOptions.stream,

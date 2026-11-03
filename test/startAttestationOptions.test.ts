@@ -9,6 +9,7 @@ jest.mock('../src/primus_zk', () => ({
 
 jest.mock('../src/classes/AlgorithmUrls', () => ({
   AlgorithmUrls: jest.fn().mockImplementation(() => ({
+    primusTeeUrl: 'wss://tee.example.com/algorithm/teetls',
     primusMpcUrl: 'wss://example.com/algorithm',
     primusProxyUrl: 'wss://example.com/algorithm-proxy',
     proxyUrl: 'wss://example.com/algoproxy',
@@ -61,6 +62,36 @@ describe('startAttestation options', () => {
     jest.clearAllMocks();
     (getAttestation as jest.Mock).mockResolvedValue({ retcode: '0' });
     (getAttestationResult as jest.Mock).mockReset();
+  });
+
+  it('shares discovered nodes for proxy and MPC while keeping TEE on its fixed URLs', async () => {
+    const client = new PrimusCoreTLS();
+    (getAttestationResult as jest.Mock).mockResolvedValue(finalResult);
+    const fetchNodes = jest.spyOn(client.algoUrls, 'fetchNodes').mockImplementation(async function (this: typeof client.algoUrls) {
+      this.primusProxyUrl = 'wss://selected.example.com/algorithm-proxy';
+      this.primusMpcUrl = 'wss://selected.example.com/algorithm';
+      this.proxyUrl = 'wss://selected.example.com/algoproxy';
+      return true;
+    });
+
+    await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
+    expect(fetchNodes).toHaveBeenCalledTimes(1);
+
+    const run = async (algorithmType: 'teetls' | 'proxytls' | 'mpctls') => {
+      const request = makeRequest(client);
+      request.setAttMode({ algorithmType });
+      await client.startAttestation(request);
+      return (getAttestation as jest.Mock).mock.lastCall[0];
+    };
+    const fixedTeeUrls = {
+      padoUrl: 'wss://tee.example.com/algorithm/teetls',
+      proxyUrl: 'wss://example.com/algoproxy',
+    };
+    expect(await run('teetls')).toMatchObject(fixedTeeUrls);
+    expect((await run('proxytls')).padoUrl).toBe('wss://selected.example.com/algorithm-proxy');
+    expect((await run('mpctls')).padoUrl).toBe('wss://selected.example.com/algorithm');
+    expect(await run('teetls')).toMatchObject(fixedTeeUrls);
+    expect(fetchNodes).toHaveBeenCalledTimes(1);
   });
 
   it('does not emit stream progress events from getAttestationResult polling results', async () => {
@@ -257,12 +288,8 @@ describe('startAttestation options', () => {
     await client.init('app-id', '0x0123456789012345678901234567890123456789012345678901234567890123');
 
     let resolveFirst!: (value: unknown) => void;
-    (getAttestationResult as jest.Mock).mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveFirst = resolve;
-        })
-    );
+    const pendingResult = new Promise((resolve) => { resolveFirst = resolve; });
+    (getAttestationResult as jest.Mock).mockReturnValue(pendingResult);
 
     const first = client.startAttestation(makeRequest(client));
     const second = client.startAttestation(makeRequest(client));
